@@ -1,0 +1,8 @@
+BasedOnStyle: LLVM
+IndentWidth: 4             # 缩进宽度为4个字符
+TabWidth: 4                # Tab的宽度为4个字符
+UseTab: Always             # 始终使用Tab进行缩进
+AccessModifierOffset: -4   # 控制 public/protected/private 的缩进
+ColumnLimit: 0             # 行宽度限制
+PointerAlignment: Left     # 指针符号在左侧
+ReferenceAlignment: Left   # 引用符号在左侧

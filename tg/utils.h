@@ -2,8 +2,8 @@
 #include <filesystem>
 
 namespace tg {
-#define TG_EXCEPTION() std::runtime_error(std::format("runtime_error: {}:{}", __FILE__, __LINE__))
-#define tg_exception() TG_EXCEPTION()
+#define TG_EXCEPTION(...) std::runtime_error(std::format("runtime_error: {}:{} {}", __FILE__, __LINE__, __VA_ARGS__, ""))
+#define tg_exception(...) TG_EXCEPTION(__VA_ARGS__)
 
 inline auto resourcePath() -> const std::filesystem::path& {
 	static auto path = std::filesystem::current_path().parent_path() / "resource";

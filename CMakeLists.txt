@@ -13,10 +13,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if (MSVC)
     add_compile_options("/utf-8")
+	add_compile_options(/Zc:preprocessor)
 endif()
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-file(GLOB PROJECT_SOURCES "ui/*.cpp" "ui/*.h" "mg/*.cpp" "mg/*.h")
+file(GLOB PROJECT_SOURCES "tg/*.cpp" "tg/*.h" "ui/*.cpp" "ui/*.h")
 
 # package
 set(OpenCV_DIR "C:/home/bin/opencv/build")
@@ -70,7 +71,7 @@ set_target_properties(TinyGraphics PROPERTIES
     MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
     MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
     MACOSX_BUNDLE TRUE
-    WIN32_EXECUTABLE TRUE
+    WIN32_EXECUTABLE FALSE
 )
 
 include(GNUInstallDirs)

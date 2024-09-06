@@ -17,7 +17,8 @@ if (MSVC)
 endif()
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-file(GLOB PROJECT_SOURCES "tg/*.cpp" "tg/*.h" "ui/*.cpp" "ui/*.h")
+file(GLOB UI_SOURCES "ui/*.cpp")
+set(PROJECT_SOURCES tg/main.cpp tg/utils.cpp ${UI_SOURCES})
 
 # package
 set(OpenCV_DIR "C:/home/bin/opencv/build")

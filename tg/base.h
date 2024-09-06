@@ -1,4 +1,5 @@
 #pragma once
+#include <tg/Point.h>
 #include <tg/utils.h>
 
 #include <QApplication>

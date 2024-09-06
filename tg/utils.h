@@ -1,4 +1,5 @@
 #pragma once
+#include <QString>
 #include <filesystem>
 
 namespace tg {
@@ -26,8 +27,23 @@ namespace tg {
 #define TG_QUICK_WINDOW_REGISTER(a_type, ...) \
 	TG_SINGLE_RUN() { TG_WINDOW_REGISTER(a_type, __VA_ARGS__); }
 
+#define TG_QUICK_WINDOW_REGISTER_2 \
+	TG_QUICK_WINDOW_REGISTER(Impl, ::tg::detail::filenameWithoutCpp(__FILE__))
+
+namespace detail {
+auto filenameWithoutCpp(const QString& file) -> QString;
+} // namespace detail
+
 inline auto resourcePath() -> const std::filesystem::path& {
 	static auto path = std::filesystem::current_path().parent_path() / "resource";
 	return path;
 }
 } // namespace tg
+
+template <>
+struct std::formatter<QString> : std::formatter<std::string> {
+	auto format(const QString& v, format_context& ctx) const {
+		return formatter<string>::format(
+			std::format("{}", v.toStdString()), ctx);
+	}
+};

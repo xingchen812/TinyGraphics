@@ -2,15 +2,18 @@
 #include <tg/utils.h>
 
 #include <QApplication>
+#include <QCursor>
 #include <QFile>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QListWidget>
 #include <QMainWindow>
+#include <QMessageBox>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QProcess>
 #include <QPushButton>
+#include <QScreen >
 #include <QTreeWidget>
 #include <QVBoxLayout>
 #include <QWidget>
@@ -28,8 +31,8 @@ public:
 	auto operator=(const Event&) = delete;
 	auto operator=(Event&&) = delete;
 
-	std::string m_window_name;
-	std::string m_event_name;
+	QString m_window_name;
+	QString m_event_name;
 };
 
 class Window : public QWidget {
@@ -41,27 +44,47 @@ public:
 	Window(Window&&) = delete;
 	auto operator=(const Window&) = delete;
 	auto operator=(Window&&) = delete;
+
+	virtual auto init() -> void {}
+
+	auto registerEvent(const QString& event_name, std::function<void()> callback);
+
+	auto moveCurWindow(int x, int y) {
+		QPoint cursorPos = QCursor::pos();
+		QList<QScreen*> screens = QGuiApplication::screens();
+		QScreen* screen = nullptr;
+		for (QScreen* s : screens) {
+			if (s->geometry().contains(cursorPos)) {
+				screen = s;
+				break;
+			}
+		}
+		if (screen) {
+			QRect screenGeometry = screen->geometry();
+			x += screenGeometry.x();
+			y += screenGeometry.y();
+			this->move(x, y);
+		} else {
+			throw tg_exception();
+		}
+	}
+
+	auto messageBoxInfo(const QString& msg) {
+		QMessageBox* msgBox = new QMessageBox(QMessageBox::Information, "信息", msg, QMessageBox::Ok, this);
+		msgBox->setAttribute(Qt::WA_DeleteOnClose);
+		msgBox->setModal(false);
+		msgBox->show();
+	}
+
+	QString m_window_name;
 };
 
 class Component {
 public:
-	Component(std::string_view name, std::function<std::unique_ptr<Window>()> create, QTreeWidget* parentList)
+	Component(const QString& name, std::function<std::unique_ptr<Window>()> create, QTreeWidget* parentList)
 		: m_name(name), m_create(create), m_window(nullptr), m_listItem(new QTreeWidgetItem(parentList)) {
-		m_listItem->setText(0, QString::fromStdString(m_name));
-
-		registerEvent<Event>("启动", [this](Event*) {
-			if (m_window) {
-				m_window->showNormal();
-				return;
-			}
-			m_window = m_create();
-			m_window->setWindowTitle(QString::fromStdString(std::string(m_name)));
-			m_window->show();
-		});
-
-		registerEvent<Event>("停止", [this](Event*) {
-			m_window = nullptr;
-		});
+		m_listItem->setText(0, m_name);
+		initRegister();
 	}
 
 	~Component() = default;
@@ -80,12 +103,12 @@ public:
 	}
 
 	template <typename EventType>
-	auto registerEvent(std::string_view name, std::function<void(EventType*)> callback) -> void {
-		auto [it, ok] = m_event.try_emplace(std::string(name), nullptr);
+	auto registerEvent(const QString& name, std::function<void(EventType*)> callback) -> void {
+		auto [it, ok] = m_event.try_emplace(name, nullptr);
 		it->second = std::move(*reinterpret_cast<std::function<void(Event*)>*>(&callback));
 		if (ok) {
 			QTreeWidgetItem* childItem1 = new QTreeWidgetItem(m_listItem);
-			childItem1->setText(0, QString::fromStdString(it->first));
+			childItem1->setText(0, it->first);
 		}
 	}
 
@@ -98,11 +121,48 @@ public:
 	}
 
 private:
-	std::string m_name;
+	QString m_name;
 	std::function<std::unique_ptr<Window>()> m_create;
 	std::unique_ptr<Window> m_window;
-	std::unordered_map<std::string, std::function<void(Event*)>> m_event;
+	std::unordered_map<QString, std::function<void(Event*)>> m_event;
 	QTreeWidgetItem* m_listItem;
+
+	auto initRegister() -> void {
+		registerEvent<Event>("启动", [this](Event*) {
+			if (m_window) {
+				m_window->showNormal();
+				return;
+			}
+			m_window = m_create();
+			m_window->setWindowTitle(m_name);
+			m_window->moveCurWindow(400, 200);
+			m_window->m_window_name = m_name;
+			m_window->setWindowIcon(QApplication::style()->standardIcon(QStyle::SP_DirOpenIcon));
+			m_window->init();
+			m_window->show();
+		});
+
+		registerEvent<Event>("停止", [this](Event*) {
+			m_window = nullptr;
+			m_listItem->takeChildren();
+			auto it = m_event.begin();
+			while (it != m_event.end()) {
+				if (it->first != "启动" && it->first != "停止") {
+					it = m_event.erase(it);
+				} else {
+					it++;
+				}
+			}
+			{
+				QTreeWidgetItem* childItem1 = new QTreeWidgetItem(m_listItem);
+				childItem1->setText(0, "启动");
+			}
+			{
+				QTreeWidgetItem* childItem1 = new QTreeWidgetItem(m_listItem);
+				childItem1->setText(0, "停止");
+			}
+		});
+	}
 };
 
 class Manager {
@@ -118,15 +178,15 @@ public:
 	}
 
 	template <typename WindowType>
-	auto registerComponent(std::string_view name) {
-		auto [_, ok] = m_components.try_emplace(std::string(name), std::make_unique<Component>(name, []() { return std::make_unique<WindowType>(); }, treeWidget));
+	auto registerComponent(const QString& name) {
+		auto [_, ok] = m_components.try_emplace(name, std::make_unique<Component>(name, []() { return std::make_unique<WindowType>(); }, treeWidget));
 		if (!ok) {
 			throw tg_exception("register error: {}", name);
 		}
 	}
 
-	auto getComponent(std::string_view window_name) const -> Component* {
-		auto it = m_components.find(std::string{window_name});
+	auto getComponent(const QString& window_name) const -> Component* {
+		auto it = m_components.find(window_name);
 		if (it == m_components.end()) {
 			throw tg_exception();
 		}
@@ -134,12 +194,12 @@ public:
 	}
 
 	template <typename EventType>
-	auto registerEvent(std::string_view window_name, std::string_view event_name, std::function<void(EventType*)> callback) {
+	auto registerEvent(const QString& window_name, const QString& event_name, std::function<void(EventType*)> callback) {
 		getComponent(window_name)->registerEvent(event_name, std::move(callback));
 	}
 
 	template <typename EventType, typename... Args>
-	auto processEvent(std::string_view window_name, std::string_view event_name, Args... args) {
+	auto processEvent(const QString& window_name, const QString& event_name, Args... args) {
 		auto e = std::make_unique<EventType>(std::forward<Args>(args)...);
 		e->m_window_name = window_name;
 		e->m_event_name = event_name;
@@ -169,8 +229,8 @@ private:
 				if (item->parent() == nullptr) {
 					item->setExpanded(!item->isExpanded());
 				} else {
-					auto window_name = item->parent()->text(0).toStdString();
-					auto event_name = item->text(0).toStdString();
+					auto window_name = item->parent()->text(0);
+					auto event_name = item->text(0);
 					getInstance().processEvent<Event>(window_name, event_name);
 				}
 			}
@@ -178,7 +238,7 @@ private:
 		}
 	};
 
-	std::unordered_map<std::string, std::unique_ptr<Component>> m_components;
+	std::unordered_map<QString, std::unique_ptr<Component>> m_components;
 	std::unique_ptr<QApplication> m_app;
 	std::unique_ptr<QMainWindow> m_main_window;
 	QTreeWidget* treeWidget;
@@ -203,6 +263,8 @@ private:
 		setStyleSheet(*m_app);
 		m_main_window = std::make_unique<QMainWindow>();
 		treeWidget = new CustomTreeWidget(m_main_window.get());
+
+		m_main_window->setWindowIcon(QApplication::style()->standardIcon(QStyle::SP_DirHomeIcon));
 	}
 
 	~Manager() = default;
@@ -223,26 +285,33 @@ private:
 	auto mainWindowInit() -> void {
 		m_main_window->setWindowTitle("TinyGraphics");
 		m_main_window->resize(280, 600);
+		reinterpret_cast<Window*>(m_main_window.get())->moveCurWindow(45, 200);
 		m_main_window->setCentralWidget(treeWidget);
 	}
 };
 
 template <typename WindowType>
-inline auto registerComponent(std::string_view name) {
+inline auto registerComponent(const QString& name) {
 	Manager::getInstance().registerComponent<WindowType>(name);
 }
 
-inline auto getComponent(std::string_view window_name) {
+inline auto getComponent(const QString& window_name) {
 	return Manager::getInstance().getComponent(window_name);
 }
 
 template <typename EventType>
-inline auto registerEvent(std::string_view window_name, std::string_view event_name, std::function<void(EventType*)> callback) {
+inline auto registerEvent(const QString& window_name, const QString& event_name, std::function<void(EventType*)> callback) {
 	Manager::getInstance().registerEvent(window_name, event_name, std::move(callback));
 }
 
 template <typename EventType, typename... Args>
-inline auto processEvent(std::string_view window_name, std::string_view event_name, Args... args) {
+inline auto processEvent(const QString& window_name, const QString& event_name, Args... args) {
 	Manager::getInstance().processEvent(window_name, event_name, std::forward<Args>(args)...);
+}
+
+inline auto Window::registerEvent(const QString& event_name, std::function<void()> callback) {
+	::tg::registerEvent<Event>(m_window_name, event_name, [callback = std::move(callback)](Event*) {
+		callback();
+	});
 }
 } // namespace tg

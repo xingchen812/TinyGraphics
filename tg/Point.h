@@ -242,6 +242,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Point<3>, x, y, z)
 
 using Point2 = detail::Point<2>;
 using Point3 = detail::Point<3>;
+using PointInt2 = detail::Point<2, int>;
 
 inline auto Point2To3(const Point2& p, bool height_is_z = true) {
 	if (height_is_z) {

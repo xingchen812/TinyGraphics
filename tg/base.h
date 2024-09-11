@@ -65,6 +65,72 @@ public:
 	QString m_event_name;
 };
 
+namespace detail {
+namespace windowConfig {
+inline auto getConfigFilePath(const QString& window_name) {
+	QDir dir(QDir::currentPath());
+	dir.cdUp();
+	dir.cd("config");
+	return dir.filePath(window_name + ".json");
+}
+
+inline auto readConfig(const QString& window_name) -> Json {
+	auto filepath = getConfigFilePath(window_name);
+	if (!QFileInfo(filepath).exists()) {
+		throw tg_exception("Window::readConfig file not exists: {}", filepath);
+	}
+	QFile file(filepath);
+	if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+		throw tg_exception("Window::writeConfig failed to open file: {}", filepath);
+	}
+	QTextStream in(&file);
+	QString fileContent = in.readAll();
+	return nlohmann::json::parse(fileContent.toStdString());
+}
+
+inline auto writeConfig(const QString& window_name, const Json& j) {
+	auto filepath = getConfigFilePath(window_name);
+	QFile file(filepath);
+	if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+		throw tg_exception("Window::writeConfig failed to open file: {}", filepath);
+	}
+	QTextStream out(&file);
+	out << QString::fromStdString(j.dump(4));
+}
+
+inline auto readConfig(const QString& window_name, const QString& name) -> Json {
+	try {
+		auto json = readConfig(window_name);
+		return json.at(name.toStdString());
+	} catch (std::exception& e) {
+		throw tg_exception("Window::readConfig config error: {}", e.what());
+	}
+}
+
+template <typename ValueType>
+inline auto readConfig(const QString& window_name, const QString& name, ValueType& v) {
+	try {
+		auto json = readConfig(window_name);
+		json = json.at(name.toStdString());
+		from_json(json, v);
+	} catch (std::exception& e) {
+		throw tg_exception("Window::readConfig config error: {}", e.what());
+	}
+}
+
+inline auto writeConfig(const QString& window_name, const QString& name, const Json& j) {
+	Json json;
+	if (QFileInfo(getConfigFilePath(window_name)).exists()) {
+		json = readConfig(window_name);
+	} else {
+		json = Json::object();
+	}
+	json[name.toStdString()] = j;
+	writeConfig(window_name, json);
+}
+} // namespace windowConfig
+} // namespace detail
+
 class Window : public QWidget {
 public:
 	Window() = default;
@@ -108,67 +174,13 @@ public:
 
 	auto sendThisEvent(const QString& event_name) -> void;
 
-	auto getConfigFilePath() {
-		QDir dir(QDir::currentPath());
-		dir.cdUp();
-		dir.cd("resource");
-		dir.cd("config");
-		return dir.filePath(m_window_name + ".json");
-	}
-
-	auto readConfig() -> Json {
-		auto filepath = getConfigFilePath();
-		if (!QFileInfo(filepath).exists()) {
-			throw tg_exception("Window::readConfig file not exists: {}", filepath);
-		}
-		QFile file(filepath);
-		if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-			throw tg_exception("Window::writeConfig failed to open file: {}", filepath);
-		}
-		QTextStream in(&file);
-		QString fileContent = in.readAll();
-		return nlohmann::json::parse(fileContent.toStdString());
-	}
-
-	auto writeConfig(const Json& j) {
-		auto filepath = getConfigFilePath();
-		QFile file(filepath);
-		if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-			throw tg_exception("Window::writeConfig failed to open file: {}", filepath);
-		}
-		QTextStream out(&file);
-		out << QString::fromStdString(j.dump(4));
-	}
-
-	auto readConfig(const QString& name) -> Json {
-		try {
-			auto json = readConfig();
-			return json.at(name.toStdString());
-		} catch (std::exception& e) {
-			throw tg_exception("Window::readConfig config error: {}", e.what());
-		}
-	}
-
 	template <typename ValueType>
 	auto readConfig(const QString& name, ValueType& v) {
-		try {
-			auto json = readConfig();
-			json = json.at(name.toStdString());
-			from_json(json, v);
-		} catch (std::exception& e) {
-			throw tg_exception("Window::readConfig config error: {}", e.what());
-		}
+		detail::windowConfig::readConfig<ValueType>(m_window_name, name, v);
 	}
 
 	auto writeConfig(const QString& name, const Json& j) {
-		Json json;
-		if (QFileInfo(getConfigFilePath()).exists()) {
-			json = readConfig();
-		} else {
-			json = Json::object();
-		}
-		json[name.toStdString()] = j;
-		writeConfig(json);
+		detail::windowConfig::writeConfig(m_window_name, name, j);
 	}
 
 	QString m_window_name;
@@ -235,6 +247,7 @@ private:
 			m_window->setWindowIcon(QApplication::style()->standardIcon(QStyle::SP_DirOpenIcon));
 			m_window->init();
 			m_window->show();
+			detail::windowConfig::writeConfig("TinyGraphics", "最后启动的窗口", m_name.toStdString());
 		});
 
 		registerEvent<Event>("停止", [this](Event*) {
@@ -274,7 +287,7 @@ public:
 
 	template <typename WindowType>
 	auto registerComponent(const QString& name) {
-		auto [_, ok] = m_components.try_emplace(name, std::make_unique<Component>(name, []() { return std::make_unique<WindowType>(); }, treeWidget));
+		auto [_, ok] = m_components.try_emplace(name, std::make_unique<Component>(name, []() { return std::make_unique<WindowType>(); }, m_treeWidget));
 		if (!ok) {
 			throw tg_exception("register error: {}", name);
 		}
@@ -356,7 +369,7 @@ private:
 	std::unordered_map<QString, std::unique_ptr<Component>> m_components;
 	std::unique_ptr<QApplication> m_app;
 	std::unique_ptr<QMainWindow> m_main_window;
-	QTreeWidget* treeWidget;
+	QTreeWidget* m_treeWidget;
 	std::unordered_map<QString, std::function<std::any(const std::any&)>> m_functions;
 
 	Manager() {
@@ -378,7 +391,7 @@ private:
 		m_app = std::make_unique<QApplication>(argc, argv);
 		setStyleSheet(*m_app);
 		m_main_window = std::make_unique<QMainWindow>();
-		treeWidget = new CustomTreeWidget(m_main_window.get());
+		m_treeWidget = new CustomTreeWidget(m_main_window.get());
 
 		m_main_window->setWindowIcon(QApplication::style()->standardIcon(QStyle::SP_DirHomeIcon));
 	}
@@ -398,11 +411,23 @@ private:
 		}
 	}
 
+	auto expandItemByLabel(const QString& label) {
+		for (auto* i : m_treeWidget->findItems(label, Qt::MatchExactly | Qt::MatchRecursive)) {
+			i->setExpanded(true);
+		}
+	}
+
 	auto mainWindowInit() -> void {
 		m_main_window->setWindowTitle("TinyGraphics");
 		m_main_window->resize(280, 600);
 		reinterpret_cast<Window*>(m_main_window.get())->moveCurWindow(45, 200);
-		m_main_window->setCentralWidget(treeWidget);
+		m_main_window->setCentralWidget(m_treeWidget);
+
+		std::string name;
+		detail::windowConfig::readConfig("TinyGraphics", "最后启动的窗口", name);
+		auto window_name = QString::fromStdString(name);
+		expandItemByLabel(window_name);
+		processEvent<Event>(window_name, "启动");
 	}
 };
 

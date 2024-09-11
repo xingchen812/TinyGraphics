@@ -1,46 +1,22 @@
 #pragma once
-#include <QVector3D>
-#include <array>
+#include <tg/utils.h>
+
 #include <cmath>
-#include <limits>
-#include <numbers>
 
 namespace tg {
-
-inline constexpr auto PI = std::numbers::pi;
-
-template <typename ValueType>
-inline constexpr auto equalF(ValueType a, auto b) {
-	return std::abs(a - b) < std::numeric_limits<ValueType>::epsilon();
-}
-
-inline constexpr double degreesToRadians(double degrees) {
-	return PI * (degrees / 180.);
-}
-
 namespace detail {
-template <size_t PointSize = 3, size_t XIndex = 0, size_t YIndex = 1, size_t ZIndex = 2, typename ValueType = float>
+template <size_t PointSize = 3, typename ValueType = float>
 class Point {
 public:
 	static_assert(PointSize == 2 || PointSize == 3);
-	static_assert(XIndex >= 0 && XIndex <= 2);
-	static_assert(YIndex >= 0 && YIndex <= 2);
-	static_assert(ZIndex >= 0 && ZIndex <= 2);
 
 	using value_t = ValueType;
 
-	std::array<value_t, PointSize> m_data;
-	value_t& x = m_data[XIndex];
-	value_t& y = m_data[YIndex];
-	value_t& z = (PointSize > 2) ? m_data[ZIndex] : m_data[0];
+	value_t x = 0;
+	value_t y = 0;
+	value_t z = 0;
 
-	constexpr Point() {
-		x = 0.;
-		y = 0.;
-		if constexpr (PointSize > 2) {
-			z = 0.;
-		}
-	}
+	constexpr Point() = default;
 
 	constexpr Point(value_t x, value_t y) {
 		static_assert(PointSize == 2, "PointSize must be at least 2 for 2D points.");
@@ -62,23 +38,6 @@ public:
 			z = p.z;
 		}
 		return *this;
-	}
-
-	constexpr static auto fromQPoint(const QVector2D& p) {
-		if constexpr (PointSize == 2) {
-			return Point(p.x(), p.y());
-		} else {
-			static_assert(PointSize == 3, "Unsupported PointSize for QVector2D.");
-			return Point(p.x(), p.y(), 0.);
-		}
-	}
-
-	constexpr auto toQPoint() const {
-		if constexpr (PointSize == 2) {
-			return QVector2D(x, y);
-		} else {
-			return QVector3D(x, y, z);
-		}
 	}
 
 	constexpr Point& operator+=(const Point& p) {
@@ -229,7 +188,7 @@ public:
 
 	constexpr Point normalized() const {
 		value_t len = length();
-		if constexpr (len != 0) {
+		if (!equalF(len, 0)) {
 			if constexpr (PointSize == 2) {
 				return Point(x / len, y / len);
 			} else {
@@ -242,7 +201,7 @@ public:
 
 	constexpr void normalize() {
 		value_t len = length();
-		if constexpr (len != 0) {
+		if (!equalF(len, 0)) {
 			if constexpr (PointSize == 2) {
 				x /= len;
 				y /= len;
@@ -269,17 +228,90 @@ public:
 	}
 
 	constexpr value_t angle_to(const Point& vec) const {
-		value_t dot_product = dot(vec);
-		value_t lengths_product = length() * vec.length();
-		return lengths_product != 0 ? std::acos(dot_product / lengths_product) : 0;
+		return atan2(cross(vec), dot(vec));
 	}
 
 	inline Point direction_to(const Point& other) const {
 		return (other - *this).normalized();
 	}
 };
+
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Point<2>, x, y)
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Point<3>, x, y, z)
 } // namespace detail
 
 using Point2 = detail::Point<2>;
 using Point3 = detail::Point<3>;
+
+inline auto Point2To3(const Point2& p, bool height_is_z = true) {
+	if (height_is_z) {
+		return Point3(p.x, p.y, 0);
+	}
+	return Point3(p.x, 0, p.y);
+}
+
+inline auto Point2To3(const std::vector<Point2>& p, bool height_is_z = true) {
+	std::vector<Point3> res;
+	res.resize(p.size());
+	for (size_t i = 0; i < p.size(); i++) {
+		res[i] = Point2To3(p[i], height_is_z);
+	}
+	return res;
+}
+
+inline auto Point2To3(const std::vector<std::vector<Point2>>& p, bool height_is_z = true) {
+	std::vector<std::vector<Point3>> res;
+	res.resize(p.size());
+	for (size_t i = 0; i < p.size(); i++) {
+		res[i] = Point2To3(p[i], height_is_z);
+	}
+	return res;
+}
+
+inline auto Point3To2(const Point3& p, bool height_is_z = true) {
+	if (height_is_z) {
+		return Point2(p.x, p.y);
+	}
+	return Point2(p.x, p.z);
+}
+
+inline auto Point3To2(const std::vector<Point3>& p, bool height_is_z = true) {
+	std::vector<Point2> res;
+	res.resize(p.size());
+	for (size_t i = 0; i < p.size(); i++) {
+		res[i] = Point3To2(p[i], height_is_z);
+	}
+	return res;
+}
+
+inline auto Point3To2(const std::vector<std::vector<Point3>>& p, bool height_is_z = true) {
+	std::vector<std::vector<Point2>> res;
+	res.resize(p.size());
+	for (size_t i = 0; i < p.size(); i++) {
+		res[i] = Point3To2(p[i], height_is_z);
+	}
+	return res;
+}
+
+inline auto Point3SwapYZ(const Point3& p) {
+	return Point3(p.x, p.z, p.y);
+}
+
+inline auto Point3SwapYZ(const std::vector<Point3>& p) {
+	std::vector<Point3> res;
+	res.resize(p.size());
+	for (size_t i = 0; i < p.size(); i++) {
+		res[i] = Point3SwapYZ(p[i]);
+	}
+	return res;
+}
+
+inline auto Point3SwapXZ(const std::vector<std::vector<Point3>>& p) {
+	std::vector<std::vector<Point3>> res;
+	res.resize(p.size());
+	for (size_t i = 0; i < p.size(); i++) {
+		res[i] = Point3SwapYZ(p[i]);
+	}
+	return res;
+}
 } // namespace tg

@@ -4,6 +4,7 @@
 
 #include <QApplication>
 #include <QCursor>
+#include <QDir>
 #include <QFile>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -18,8 +19,36 @@
 #include <QTreeWidget>
 #include <QVBoxLayout>
 #include <QWidget>
+#include <any>
 #include <spdlog/sinks/stdout_color_sinks.h>
-#include <spdlog/spdlog.h>
+
+template <>
+struct fmt::formatter<tg::Point3> : fmt::formatter<std::string> {
+	auto format(const tg::Point3& v, format_context& ctx) const -> decltype(ctx.out()) {
+		return fmt::format_to(ctx.out(), "{{{}, {}, {}}}", v.x, v.y, v.z);
+	}
+};
+
+template <>
+struct fmt::formatter<tg::Point2> : fmt::formatter<std::string> {
+	auto format(const tg::Point2& v, format_context& ctx) const -> decltype(ctx.out()) {
+		return fmt::format_to(ctx.out(), "{{{}, {}}}", v.x, v.y);
+	}
+};
+
+template <typename T>
+struct fmt::formatter<std::vector<T>> : fmt::formatter<std::string> {
+	auto format(const std::vector<T>& v, format_context& ctx) -> decltype(ctx.out()) {
+		return fmt::format_to(ctx.out(), "[{}]", fmt::join(v, ", "));
+	}
+};
+
+template <>
+struct fmt::formatter<QString> : fmt::formatter<std::string> {
+	auto format(const QString& v, format_context& ctx) -> decltype(ctx.out()) {
+		return fmt::format_to(ctx.out(), "{}", v.toStdString());
+	}
+};
 
 namespace tg {
 class Event {
@@ -75,6 +104,71 @@ public:
 		msgBox->setAttribute(Qt::WA_DeleteOnClose);
 		msgBox->setModal(false);
 		msgBox->show();
+	}
+
+	auto sendThisEvent(const QString& event_name) -> void;
+
+	auto getConfigFilePath() {
+		QDir dir(QDir::currentPath());
+		dir.cdUp();
+		dir.cd("resource");
+		dir.cd("config");
+		return dir.filePath(m_window_name + ".json");
+	}
+
+	auto readConfig() -> Json {
+		auto filepath = getConfigFilePath();
+		if (!QFileInfo(filepath).exists()) {
+			throw tg_exception("Window::readConfig file not exists: {}", filepath);
+		}
+		QFile file(filepath);
+		if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+			throw tg_exception("Window::writeConfig failed to open file: {}", filepath);
+		}
+		QTextStream in(&file);
+		QString fileContent = in.readAll();
+		return nlohmann::json::parse(fileContent.toStdString());
+	}
+
+	auto writeConfig(const Json& j) {
+		auto filepath = getConfigFilePath();
+		QFile file(filepath);
+		if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+			throw tg_exception("Window::writeConfig failed to open file: {}", filepath);
+		}
+		QTextStream out(&file);
+		out << QString::fromStdString(j.dump(4));
+	}
+
+	auto readConfig(const QString& name) -> Json {
+		try {
+			auto json = readConfig();
+			return json.at(name.toStdString());
+		} catch (std::exception& e) {
+			throw tg_exception("Window::readConfig config error: {}", e.what());
+		}
+	}
+
+	template <typename ValueType>
+	auto readConfig(const QString& name, ValueType& v) {
+		try {
+			auto json = readConfig();
+			json = json.at(name.toStdString());
+			from_json(json, v);
+		} catch (std::exception& e) {
+			throw tg_exception("Window::readConfig config error: {}", e.what());
+		}
+	}
+
+	auto writeConfig(const QString& name, const Json& j) {
+		Json json;
+		if (QFileInfo(getConfigFilePath()).exists()) {
+			json = readConfig();
+		} else {
+			json = Json::object();
+		}
+		json[name.toStdString()] = j;
+		writeConfig(json);
 	}
 
 	QString m_window_name;
@@ -201,10 +295,30 @@ public:
 
 	template <typename EventType, typename... Args>
 	auto processEvent(const QString& window_name, const QString& event_name, Args... args) {
-		auto e = std::make_unique<EventType>(std::forward<Args>(args)...);
-		e->m_window_name = window_name;
-		e->m_event_name = event_name;
-		getComponent(window_name)->processEvent(e.get());
+		try {
+			auto e = std::make_unique<EventType>(std::forward<Args>(args)...);
+			e->m_window_name = window_name;
+			e->m_event_name = event_name;
+			getComponent(window_name)->processEvent(e.get());
+		} catch (std::exception& e) {
+			spdlog::error("processEvent exception: {}", e.what());
+		}
+	}
+
+	auto registerFunction(const QString& name, std::function<std::any(const std::any&)> callback) {
+		m_functions.try_emplace(name, std::function<std::any(const std::any&)>{}).first->second = std::move(callback);
+	}
+
+	auto callFunction(const QString& name, const std::any& any) {
+		auto it = m_functions.find(name);
+		if (it == m_functions.end()) {
+			throw tg_exception("callFunction not found: {}", name);
+		}
+		try {
+			return it->second(any);
+		} catch (std::exception& e) {
+			throw tg_exception("callFunction exception: {}", e.what());
+		}
 	}
 
 	auto main() {
@@ -243,6 +357,7 @@ private:
 	std::unique_ptr<QApplication> m_app;
 	std::unique_ptr<QMainWindow> m_main_window;
 	QTreeWidget* treeWidget;
+	std::unordered_map<QString, std::function<std::any(const std::any&)>> m_functions;
 
 	Manager() {
 		{
@@ -306,8 +421,8 @@ inline auto registerEvent(const QString& window_name, const QString& event_name,
 }
 
 template <typename EventType, typename... Args>
-inline auto processEvent(const QString& window_name, const QString& event_name, Args... args) {
-	Manager::getInstance().processEvent(window_name, event_name, std::forward<Args>(args)...);
+inline auto sendEvent(const QString& window_name, const QString& event_name, Args... args) {
+	Manager::getInstance().processEvent<EventType>(window_name, event_name, std::forward<Args>(args)...);
 }
 
 inline auto Window::registerEvent(const QString& event_name, std::function<void()> callback) {
@@ -315,4 +430,42 @@ inline auto Window::registerEvent(const QString& event_name, std::function<void(
 		callback();
 	});
 }
+
+inline auto Window::sendThisEvent(const QString& event_name) -> void {
+	sendEvent<Event>(m_window_name, event_name);
+}
+
+inline auto registerFunction(const QString& name, std::function<std::any(const std::any&)> callback) {
+	Manager::getInstance().registerFunction(name, std::move(callback));
+}
+
+template <bool StatisticTime = true>
+inline auto callFunction(const QString& name, const std::any& any) {
+	if constexpr (!StatisticTime) {
+		return Manager::getInstance().callFunction(name, any);
+	}
+
+	auto start = std::chrono::high_resolution_clock::now();
+	auto res = Manager::getInstance().callFunction(name, any);
+	auto end = std::chrono::high_resolution_clock::now();
+	auto diff = end - start;
+	spdlog::info("funtion used time: {}, {}", name, printReadableDuration(diff));
+	return res;
+}
+
+inline const std::vector<QColor> k_colors = []() {
+	std::vector<QColor> colors;
+	colors.emplace_back(0.F, 0.F, 255.F);	// Red (BGR format)
+	colors.emplace_back(0.F, 255.F, 0.F);	// Green
+	colors.emplace_back(255.F, 0.F, 0.F);	// Blue
+	colors.emplace_back(255.F, 255.F, 0.F); // Cyan
+	colors.emplace_back(255.F, 0.F, 255.F); // Magenta
+	colors.emplace_back(0.F, 255.F, 255.F); // Yellow
+	// colors.emplace_back(255.F, 255.F, 255.F); // White
+	colors.emplace_back(0.F, 0.F, 0.F);		  // Black
+	colors.emplace_back(128.F, 128.F, 128.F); // Gray
+	colors.emplace_back(0.F, 165.F, 255.F);	  // Orange
+	colors.emplace_back(128.F, 0.F, 128.F);	  // Purple
+	return colors;
+}();
 } // namespace tg

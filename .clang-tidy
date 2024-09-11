@@ -5,6 +5,7 @@ Checks: >
   -misc-non-private-member-variables-in-classes,
   -misc-no-recursion,
   -misc-use-anonymous-namespace,
+  -llvm-namespace-comment,
   -misc-include-cleaner'
 CheckOptions:
   - key:             readability-redundant-member-init.IgnoreBaseInCopyConstructors

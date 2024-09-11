@@ -66,6 +66,10 @@ public:
 		return !equalF(width(), 0) && !equalF(height(), 0);
 	}
 
+	auto resize(float w, float h) {
+		*this = Rect(topLeft().x, topLeft().y, w, h, radians());
+	}
+
 private:
 	std::vector<Point2> m_points = std::vector<Point2>(4, Point2(0, 0));
 	float m_width = 0;

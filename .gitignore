@@ -1,5 +1,5 @@
 build/
 CMakeLists.txt.user
 .vscode/
-private/
 config/
+thirdParty/

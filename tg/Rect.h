@@ -1,5 +1,6 @@
 #pragma once
-#include <tg/base.h>
+#include <tg/Point.h>
+#include <tg/utils.h>
 
 namespace tg {
 class Rect {

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16)
 
 project(TinyGraphics VERSION 0.1 LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if (MSVC)
@@ -11,30 +11,42 @@ if (MSVC)
 endif()
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-file(GLOB SRC_SOURCES "ui/*.cpp" "private/*.cpp")
-set(PROJECT_SOURCES tg/main.cpp tg/utils.cpp ${SRC_SOURCES})
-
 # package
-set(OpenCV_DIR "C:/home/bin/opencv/build")
-find_package(OpenCV REQUIRED)
-include_directories("C:/home/bin/opencv/build/include")
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/thirdParty/glfw)
+find_package(OpenGL REQUIRED)
+
 include_directories(${CMAKE_CURRENT_LIST_DIR})
-include_directories("C:/home/bin")
+include_directories(${CMAKE_CURRENT_LIST_DIR}/thirdParty)
+include_directories(${CMAKE_CURRENT_LIST_DIR}/thirdParty/imgui)
 # !end
 
-find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
+set(
+    SOURCE_IMGUI
+    ${CMAKE_CURRENT_LIST_DIR}/thirdParty/imgui/imgui.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/thirdParty/imgui/imgui_demo.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/thirdParty/imgui/imgui_draw.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/thirdParty/imgui/imgui_tables.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/thirdParty/imgui/imgui_widgets.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/thirdParty/imgui/backends/imgui_impl_opengl3.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/thirdParty/imgui/backends/imgui_impl_glfw.cpp
+)
+set(
+    SOURCE_TG
+    ${CMAKE_CURRENT_LIST_DIR}/tg/main.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/tg/ui/window.cpp
+)
+file(GLOB SOURCE_EXAMPLE example/*.cpp)
 
 add_executable(
 	TinyGraphics
-	${PROJECT_SOURCES}
+    ${SOURCE_GLFW}
+    ${SOURCE_IMGUI}
+    ${SOURCE_TG}
+	${SOURCE_EXAMPLE}
 )
-
-target_link_libraries(TinyGraphics PRIVATE
-	Qt${QT_VERSION_MAJOR}::Widgets
-    ${OpenCV_LIBS}
-)
-set_target_properties(TinyGraphics PROPERTIES
-    ${BUNDLE_ID_OPTION}
-    WIN32_EXECUTABLE FALSE
+target_link_libraries(
+    TinyGraphics
+    PRIVATE
+    glfw
+    OpenGL::GL
 )

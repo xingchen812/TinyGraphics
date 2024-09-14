@@ -8,34 +8,49 @@ namespace detail {
 template <size_t PointSize = 3, typename ValueType = float>
 class Point {
 public:
-	static_assert(PointSize == 2 || PointSize == 3);
+	static_assert(PointSize >= 2 && PointSize <= 4);
 
 	using value_t = ValueType;
 
 	value_t x = 0;
 	value_t y = 0;
 	value_t z = 0;
+	value_t w = 0;
 
 	constexpr Point() = default;
 
-	constexpr Point(value_t x, value_t y) {
-		static_assert(PointSize == 2, "PointSize must be at least 2 for 2D points.");
+	constexpr Point(value_t x, value_t y)
+		requires(PointSize == 2)
+	{
 		this->x = x;
 		this->y = y;
 	}
 
-	constexpr Point(value_t x, value_t y, value_t z) {
-		static_assert(PointSize == 3, "PointSize must be at least 3 for 3D points.");
+	constexpr Point(value_t x, value_t y, value_t z)
+		requires(PointSize == 3)
+	{
 		this->x = x;
 		this->y = y;
 		this->z = z;
 	}
 
-	Point& operator=(const Point& p) {
+	constexpr Point(value_t x, value_t y, value_t z, value_t w)
+		requires(PointSize == 4)
+	{
+		this->x = x;
+		this->y = y;
+		this->z = z;
+		this->w = w;
+	}
+
+	constexpr Point& operator=(const Point& p) {
 		x = p.x;
 		y = p.y;
-		if constexpr (PointSize == 3) {
+		if constexpr (PointSize > 2) {
 			z = p.z;
+		}
+		if constexpr (PointSize > 3) {
+			w = p.w;
 		}
 		return *this;
 	}
@@ -46,6 +61,9 @@ public:
 		if constexpr (PointSize > 2) {
 			z += p.z;
 		}
+		if constexpr (PointSize > 3) {
+			w += p.w;
+		}
 		return *this;
 	}
 
@@ -54,6 +72,9 @@ public:
 		y -= p.y;
 		if constexpr (PointSize > 2) {
 			z -= p.z;
+		}
+		if constexpr (PointSize > 3) {
+			w -= p.w;
 		}
 		return *this;
 	}
@@ -64,6 +85,9 @@ public:
 		if constexpr (PointSize > 2) {
 			z *= c;
 		}
+		if constexpr (PointSize > 3) {
+			w *= c;
+		}
 		return *this;
 	}
 
@@ -73,6 +97,9 @@ public:
 		if constexpr (PointSize > 2) {
 			z /= c;
 		}
+		if constexpr (PointSize > 3) {
+			w /= c;
+		}
 		return *this;
 	}
 
@@ -80,9 +107,11 @@ public:
 		bool equal = equalF(p1.x, p2.x) && equalF(p1.y, p2.y);
 		if constexpr (PointSize > 2) {
 			equal = equal && equalF(p1.z, p2.z);
-		} else {
-			return equal;
 		}
+		if constexpr (PointSize > 3) {
+			equal = equal && equalF(p1.w, p2.w);
+		}
+		return equal;
 	}
 
 	friend constexpr bool operator!=(const Point& p1, const Point& p2) {
@@ -92,33 +121,35 @@ public:
 	friend constexpr Point operator+(const Point& p1, const Point& p2) {
 		if constexpr (PointSize == 2) {
 			return Point(p1.x + p2.x, p1.y + p2.y);
-		} else {
+		} else if constexpr (PointSize == 3) {
 			return Point(p1.x + p2.x, p1.y + p2.y, p1.z + p2.z);
+		} else if constexpr (PointSize == 4) {
+			return Point(p1.x + p2.x, p1.y + p2.y, p1.z + p2.z, p1.w + p2.w);
 		}
 	}
 
 	friend constexpr Point operator-(const Point& p1, const Point& p2) {
 		if constexpr (PointSize == 2) {
 			return Point(p1.x - p2.x, p1.y - p2.y);
-		} else {
+		} else if constexpr (PointSize == 3) {
 			return Point(p1.x - p2.x, p1.y - p2.y, p1.z - p2.z);
+		} else if constexpr (PointSize == 4) {
+			return Point(p1.x - p2.x, p1.y - p2.y, p1.z - p2.z, p1.w - p2.w);
 		}
 	}
 
 	friend constexpr Point operator*(const Point& p, value_t c) {
 		if constexpr (PointSize == 2) {
 			return Point(p.x * c, p.y * c);
-		} else {
+		} else if constexpr (PointSize == 3) {
 			return Point(p.x * c, p.y * c, p.z * c);
+		} else if constexpr (PointSize == 4) {
+			return Point(p.x * c, p.y * c, p.z * c, p.w * c);
 		}
 	}
 
 	friend constexpr Point operator*(value_t c, const Point& p) {
-		if constexpr (PointSize == 2) {
-			return Point(p.x * c, p.y * c);
-		} else {
-			return Point(p.x * c, p.y * c, p.z * c);
-		}
+		return p * c;
 	}
 
 	friend constexpr Point operator+(const Point& p) {
@@ -128,111 +159,97 @@ public:
 	friend constexpr Point operator-(const Point& p) {
 		if constexpr (PointSize == 2) {
 			return Point(-p.x, -p.y);
-		} else {
+		} else if constexpr (PointSize == 3) {
 			return Point(-p.x, -p.y, -p.z);
+		} else if constexpr (PointSize == 4) {
+			return Point(-p.x, -p.y, -p.z, -p.w);
 		}
 	}
 
 	friend constexpr Point operator/(const Point& p, value_t divisor) {
 		if constexpr (PointSize == 2) {
 			return Point(p.x / divisor, p.y / divisor);
-		} else {
+		} else if constexpr (PointSize == 3) {
 			return Point(p.x / divisor, p.y / divisor, p.z / divisor);
+		} else if constexpr (PointSize == 4) {
+			return Point(p.x / divisor, p.y / divisor, p.z / divisor, p.w / divisor);
 		}
 	}
 
-	constexpr Point abs() const {
+	constexpr auto abs() const {
 		if constexpr (PointSize == 2) {
 			return Point(std::abs(x), std::abs(y));
-		} else {
+		} else if constexpr (PointSize == 3) {
 			return Point(std::abs(x), std::abs(y), std::abs(z));
+		} else if constexpr (PointSize == 4) {
+			return Point(std::abs(x), std::abs(y), std::abs(z), std::abs(w));
 		}
 	}
 
-	constexpr Point cross(const Point& vec) const {
-		static_assert(PointSize == 3, "Cross product is only defined for 3D points.");
+	constexpr auto cross(const Point& vec) const
+		requires(PointSize == 3)
+	{
 		return Point(y * vec.z - z * vec.y, z * vec.x - x * vec.z, x * vec.y - y * vec.x);
 	}
 
-	constexpr value_t distance_to(const Point& vec) const {
+	constexpr value_t distance_to(const Point& vec) const
+		requires(PointSize == 2 || PointSize == 3)
+	{
 		if constexpr (PointSize == 2) {
 			return std::sqrt(std::pow(x - vec.x, 2) + std::pow(y - vec.y, 2));
-		} else {
+		} else if constexpr (PointSize == 3) {
 			return std::sqrt(std::pow(x - vec.x, 2) + std::pow(y - vec.y, 2) + std::pow(z - vec.z, 2));
 		}
 	}
 
-	constexpr value_t dot(const Point& vec) const {
+	constexpr value_t dot(const Point& vec) const
+		requires(PointSize == 2 || PointSize == 3)
+	{
 		if constexpr (PointSize == 2) {
 			return x * vec.x + y * vec.y;
-		} else {
+		} else if constexpr (PointSize == 3) {
 			return x * vec.x + y * vec.y + z * vec.z;
 		}
 	}
 
-	constexpr value_t length() const {
+	constexpr value_t length() const
+		requires(PointSize == 2 || PointSize == 3)
+	{
 		if constexpr (PointSize == 2) {
 			return std::sqrt(x * x + y * y);
-		} else {
+		} else if constexpr (PointSize == 3) {
 			return std::sqrt(x * x + y * y + z * z);
 		}
 	}
 
-	constexpr Point linear_interpolate(const Point& vec, value_t t) const {
+	constexpr auto linear_interpolate(const Point& vec, value_t t) const
+		requires(PointSize == 2 || PointSize == 3)
+	{
 		if constexpr (PointSize == 2) {
 			return Point(x + t * (vec.x - x), y + t * (vec.y - y));
-		} else {
+		} else if constexpr (PointSize == 3) {
 			return Point(x + t * (vec.x - x), y + t * (vec.y - y), z + t * (vec.z - z));
 		}
 	}
 
-	constexpr Point normalized() const {
-		value_t len = length();
-		if (!equalF(len, 0)) {
-			if constexpr (PointSize == 2) {
-				return Point(x / len, y / len);
-			} else {
-				return Point(x / len, y / len, z / len);
-			}
-		} else {
-			return *this;
+	constexpr auto rotate(const Point& axis, value_t angle)
+		requires(PointSize == 2 || PointSize == 3)
+	{
+		value_t c = std::cos(angle);
+		value_t s = std::sin(angle);
+
+		Point rotated;
+		rotated.x = (c + (1 - c) * axis.x * axis.x) * x + ((1 - c) * axis.x * axis.y - axis.z * s) * y + ((1 - c) * axis.x * axis.z + axis.y * s) * z;
+		rotated.y = ((1 - c) * axis.x * axis.y + axis.z * s) * x + (c + (1 - c) * axis.y * axis.y) * y + ((1 - c) * axis.y * axis.z - axis.x * s) * z;
+		if constexpr (PointSize > 3) {
+			rotated.z = ((1 - c) * axis.x * axis.z - axis.y * s) * x + ((1 - c) * axis.y * axis.z + axis.x * s) * y + (c + (1 - c) * axis.z * axis.z) * z;
 		}
-	}
 
-	constexpr void normalize() {
-		value_t len = length();
-		if (!equalF(len, 0)) {
-			if constexpr (PointSize == 2) {
-				x /= len;
-				y /= len;
-			} else {
-				x /= len;
-				y /= len;
-				z /= len;
-			}
+		x = rotated.x;
+		y = rotated.y;
+		if constexpr (PointSize > 3) {
+			z = rotated.z;
 		}
-	}
-
-	constexpr Point rotated(const Point& axis, value_t radians) const {
-		static_assert(PointSize == 2, "Rotation is only defined for 2D points.");
-		value_t cos_angle = std::cos(radians);
-		value_t sin_angle = std::sin(radians);
-		Point relative = *this - axis;
-		return Point(
-			relative.x * cos_angle - relative.y * sin_angle + axis.x,
-			relative.x * sin_angle + relative.y * cos_angle + axis.y);
-	}
-
-	constexpr void rotate(const Point& axis, value_t radians) {
-		*this = rotated(axis, radians);
-	}
-
-	constexpr value_t angle_to(const Point& vec) const {
-		return atan2(cross(vec), dot(vec));
-	}
-
-	inline Point direction_to(const Point& other) const {
-		return (other - *this).normalized();
 	}
 };
 
@@ -244,75 +261,50 @@ using Point2 = detail::Point<2>;
 using Point3 = detail::Point<3>;
 using PointInt2 = detail::Point<2, int>;
 
-inline auto Point2To3(const Point2& p, bool height_is_z = true) {
-	if (height_is_z) {
-		return Point3(p.x, p.y, 0);
-	}
+inline constexpr auto Point2To3(const Point2& p) {
 	return Point3(p.x, 0, p.y);
 }
 
-inline auto Point2To3(const std::vector<Point2>& p, bool height_is_z = true) {
+inline constexpr auto Point2To3(const std::vector<Point2>& p) {
 	std::vector<Point3> res;
 	res.resize(p.size());
 	for (size_t i = 0; i < p.size(); i++) {
-		res[i] = Point2To3(p[i], height_is_z);
+		res[i] = Point2To3(p[i]);
 	}
 	return res;
 }
 
-inline auto Point2To3(const std::vector<std::vector<Point2>>& p, bool height_is_z = true) {
-	std::vector<std::vector<Point3>> res;
-	res.resize(p.size());
-	for (size_t i = 0; i < p.size(); i++) {
-		res[i] = Point2To3(p[i], height_is_z);
-	}
-	return res;
-}
-
-inline auto Point3To2(const Point3& p, bool height_is_z = true) {
-	if (height_is_z) {
-		return Point2(p.x, p.y);
-	}
+inline constexpr auto Point3To2(const Point3& p) {
 	return Point2(p.x, p.z);
 }
 
-inline auto Point3To2(const std::vector<Point3>& p, bool height_is_z = true) {
+inline constexpr auto Point3To2(const std::vector<Point3>& p) {
 	std::vector<Point2> res;
 	res.resize(p.size());
 	for (size_t i = 0; i < p.size(); i++) {
-		res[i] = Point3To2(p[i], height_is_z);
-	}
-	return res;
-}
-
-inline auto Point3To2(const std::vector<std::vector<Point3>>& p, bool height_is_z = true) {
-	std::vector<std::vector<Point2>> res;
-	res.resize(p.size());
-	for (size_t i = 0; i < p.size(); i++) {
-		res[i] = Point3To2(p[i], height_is_z);
-	}
-	return res;
-}
-
-inline auto Point3SwapYZ(const Point3& p) {
-	return Point3(p.x, p.z, p.y);
-}
-
-inline auto Point3SwapYZ(const std::vector<Point3>& p) {
-	std::vector<Point3> res;
-	res.resize(p.size());
-	for (size_t i = 0; i < p.size(); i++) {
-		res[i] = Point3SwapYZ(p[i]);
-	}
-	return res;
-}
-
-inline auto Point3SwapXZ(const std::vector<std::vector<Point3>>& p) {
-	std::vector<std::vector<Point3>> res;
-	res.resize(p.size());
-	for (size_t i = 0; i < p.size(); i++) {
-		res[i] = Point3SwapYZ(p[i]);
+		res[i] = Point3To2(p[i]);
 	}
 	return res;
 }
 } // namespace tg
+
+template <>
+struct fmt::formatter<tg::Point3> : fmt::formatter<std::string> {
+	auto format(const tg::Point3& v, format_context& ctx) const -> decltype(ctx.out()) {
+		return fmt::format_to(ctx.out(), "{{{}, {}, {}}}", v.x, v.y, v.z);
+	}
+};
+
+template <>
+struct fmt::formatter<tg::Point2> : fmt::formatter<std::string> {
+	auto format(const tg::Point2& v, format_context& ctx) const -> decltype(ctx.out()) {
+		return fmt::format_to(ctx.out(), "{{{}, {}}}", v.x, v.y);
+	}
+};
+
+template <typename T>
+struct fmt::formatter<std::vector<T>> : fmt::formatter<std::string> {
+	auto format(const std::vector<T>& v, format_context& ctx) -> decltype(ctx.out()) {
+		return fmt::format_to(ctx.out(), "[{}]", fmt::join(v, ", "));
+	}
+};

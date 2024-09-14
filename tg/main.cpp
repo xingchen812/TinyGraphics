@@ -1,5 +1,5 @@
-#include <tg/base.h>
+#include <tg/ui/window.h>
 
 int main(int argc, char** argv) {
-	return tg::Manager::getInstance().main();
+	return tg::ui::MainWindow::getInstance().main(argc, argv);
 }

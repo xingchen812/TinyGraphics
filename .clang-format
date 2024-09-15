@@ -1,8 +1,56 @@
+---
+# https://clang.llvm.org/docs/ClangFormatStyleOptions.html
 BasedOnStyle: LLVM
-IndentWidth: 4             # 缩进宽度为4个字符
-TabWidth: 4                # Tab的宽度为4个字符
-UseTab: Always             # 始终使用Tab进行缩进
-AccessModifierOffset: -4   # 控制 public/protected/private 的缩进
-ColumnLimit: 0             # 行宽度限制
-PointerAlignment: Left     # 指针符号在左侧
-ReferenceAlignment: Left   # 引用符号在左侧
+Language: Cpp
+# 缩进宽度
+IndentWidth: 4
+BreakBeforeBraces: Custom
+# 指针对齐
+PointerAlignment: Left
+BraceWrapping:
+  AfterClass: false
+  AfterStruct: false
+  AfterEnum: false
+  AfterUnion: false
+  AfterNamespace: false
+  AfterExternBlock: false
+  BeforeElse: true
+# 允许短的 if 语句在同一行
+AllowShortIfStatementsOnASingleLine: false
+IndentCaseLabels: true
+# 访问说明符(public、private等)的偏移
+AccessModifierOffset: -4
+# 允许函数语句和声明在一行
+AllowShortFunctionsOnASingleLine: All
+# 如果为真，则始终在多行字符串文字之前中断。
+AlwaysBreakBeforeMultilineStrings: true
+# 总是在template声明后换行
+AlwaysBreakTemplateDeclarations: true
+# 如果函数定义或声明被包装在类型之后，则缩进。
+# true:
+# LoooooooooooooooooooooooooooooooooooooooongReturnType
+#     LoooooooooooooooooooooooooooooooongFunctionDeclaration();
+IndentWrappedFunctionNames: true
+# 注释 // 前面的空格数量
+SpacesBeforeTrailingComments: 3
+# 把过长的一行注释拆分成多行
+ReflowComments: false
+# 在 namespace 的结尾添加注释，如 } // namespace a
+FixNamespaceComments: true
+# 参数
+AlignAfterOpenBracket: BlockIndent
+BinPackParameters: false
+MaxEmptyLinesToKeep: 4
+ColumnLimit: 0
+# 连续声明时，对齐所有声明的变量名
+AlignConsecutiveDeclarations: true
+# 对齐连续的等号
+AlignConsecutiveAssignments:
+  Enabled: true
+  AcrossEmptyLines: true
+# 对齐连续的注释
+AlignTrailingComments:
+  Kind: Always
+  OverEmptyLines: 2
+---
+

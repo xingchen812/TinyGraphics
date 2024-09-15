@@ -2,84 +2,86 @@
 
 ## develop
 
+- download TinyGraphics
+	```
+	git clone https://github.com/xingchen812/TinyGraphics
+	cd TinyGraphics
+	mkdir bin
+	mkdir thirdParty
+	# download thirdParty
+	code .
+	# init file .vscode/settings.json .vscode/tasks.json .vscode/launch.json
+	# F5 to start
+	```
+
+- download thirdParty
+  - glfw
+  - imgui
+  - nlohmann
+  - spdlog
+
+  quick download: https://github.com/xingchen812/TinyGraphics/releases/download/thirdParty/thirdParty.7z
+
 - `.vscode/settings.json`
 
   ```json
-  {
-  	"files.insertFinalNewline": true
-  }
+	{
+		"C_Cpp.autocomplete": "disabled",
+		"C_Cpp.intelliSenseEngine": "Disabled",
+		"[cpp]": {
+			"editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
+		},
+		"clangd.path": "C:\\home\\bin\\clang+llvm-18.1.8-x86_64-pc-windows-msvc\\bin\\clangd.exe",
+		"clangd.arguments": [
+			"--compile-commands-dir=${workspaceFolder}/.vscode",
+			"--pch-storage=memory",
+			"--header-insertion=never",
+			"--background-index",
+			"--completion-style=detailed",
+			"-j=12",
+			"--all-scopes-completion",
+			"--function-arg-placeholders=false",
+			"--pretty",
+			"--cross-file-rename"
+		],
+		"files.insertFinalNewline": true
+	}
   ```
 
 - `.vscode/tasks.json`
 
   ```json
-  {
-  	"version": "2.0.0",
-  	"tasks": [
-  		{
-  			"label": "build",
-  			"type": "shell",
-  			"command": "${workspaceRoot}/build.bat",
-  			"args": [],
-  			"group": {
-  				"kind": "build",
-  				"isDefault": true
-  			},
-  			"options": {
-  				"env": {
-  					"CMAKE_PREFIX_PATH": "C:/home/bin/qt/6.7.2/msvc2019_64",
-  					"MSVC_BAT": "C:/Program Files/Microsoft Visual Studio/2022/Professional/VC/Auxiliary/Build/vcvarsall.bat",
-  					"CMAKE_EXEC": "C:/home/bin/qt/Tools/CMake_64/bin/cmake.exe"
-  				}
-  			}
-  		}
-  	]
-  }
+	{
+		"version": "2.0.0",
+		"tasks": [
+			{
+				"label": "build debug",
+				"type": "shell",
+				"command": "xmake config -m debug; xmake",
+				"group": {
+					"kind": "build",
+					"isDefault": true
+				}
+			}
+		]
+	}
   ```
 
 - `.vscode/launch.json`
 
   ```json
-  {
-  	"version": "0.2.0",
-  	"configurations": [
-  		{
-  			"name": "Debug",
-  			"type": "cppvsdbg",
-  			"request": "launch",
-  			"program": "${workspaceRoot}/build/TinyGraphics.exe",
-  			"stopAtEntry": false,
-  			"cwd": "${workspaceRoot}/build/",
-  			"environment": [],
-  			"console": "integratedTerminal",
-  			"preLaunchTask": "build"
-  		}
-  	]
-  }
-  ```
-
-- vscode setting
-
-  ```json
-  {
-  	"C_Cpp.autocomplete": "disabled",
-  	"C_Cpp.intelliSenseEngine": "Disabled",
-  	"[cpp]": {
-  		"editor.defaultFormatter": "llvm-vs-code-extensions.vscode-clangd"
-  	},
-  	"clangd.path": "C:\\home\\bin\\clang+llvm-18.1.8-x86_64-pc-windows-msvc\\bin\\clangd.exe",
-  	"clangd.arguments": [
-  		"--compile-commands-dir=${workspaceFolder}/build",
-  		"--pch-storage=memory",
-  		"--header-insertion=never",
-  		"--background-index",
-  		"--completion-style=detailed",
-  		"--clang-tidy",
-  		"-j=12",
-  		"--all-scopes-completion",
-  		"--function-arg-placeholders=false",
-  		"--header-insertion-decorators",
-  		"--clang-tidy-checks=-unused-includes"
-  	]
-  }
+	{
+		"version": "0.2.0",
+		"configurations": [
+			{
+				"name": "Debug",
+				"type": "cppvsdbg",
+				"request": "launch",
+				"program": "${workspaceRoot}/build/windows/x64/debug/TinyGraphics.exe",
+				"cwd": "${workspaceRoot}",
+				"console": "internalConsole",
+				"preLaunchTask": "build debug",
+			}
+		]
+	}
   ```

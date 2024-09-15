@@ -1,14 +1,77 @@
-Checks: >
-  '-*,clang-diagnostic-*,llvm-*,misc-*,
-  -misc-const-correctness,
-  -misc-unused-parameters,
-  -misc-non-private-member-variables-in-classes,
-  -misc-no-recursion,
-  -misc-use-anonymous-namespace,
-  -llvm-namespace-comment,
-  -misc-include-cleaner'
+Checks:
+  - "*"
+  - "-llvmlibc-implementation-in-namespace"                          # 必须使用 LLVM 风格的 namespace
+  - "-llvmlibc-restrict-system-libc-headers"                         # 必须使用 LLVM 风格的 header
+  - "-llvmlibc-inline-function-decl"                                 # 必须使用 LLVM 风格的 inline
+  - "-llvmlibc-callee-namespace"                                     # 必须使用 LLVM 风格的 namespace
+  - "-llvm-header-guard"                                             # 必须使用 LLVM 风格的 头文件宏定义
+  - "-misc-non-private-member-variables-in-classes"                  # 禁止非 private 成员变量
+  - "-cppcoreguidelines-non-private-member-variables-in-classes"     # 禁止非 private 成员变量
+  - "-fuchsia-trailing-return"                                       # 禁止不使用推导时使用尾返回类型
+  - "-fuchsia-statically-constructed-objects"                        # 禁止非 constexpr 静态变量, 避免 main 之前抛出异常
+  - "-cert-err58-cpp"                                                # 禁止非 constexpr 静态变量, 避免 main 之前抛出异常
+  - "-cppcoreguidelines-pro-type-member-init"                        # 必须初始化类成员变量
+  - "-hicpp-member-init"                                             # 必须初始化类成员变量
+  - "-cppcoreguidelines-avoid-non-const-global-variables"            # 禁止非常量全局变量
+  - "-cppcoreguidelines-init-variables"                              # 必须初始化变量
+  - "-cppcoreguidelines-pro-type-reinterpret-cast"                   # 禁止 reinterpret_cast
+  - "-fuchsia-default-arguments-calls"                               # 禁止函数调用使用默认参数
+  - "-fuchsia-default-arguments-declarations"                        # 禁止函数声明使用默认参数
+  - "-cppcoreguidelines-pro-bounds-pointer-arithmetic"               # 禁止指针算术运算
+  - "-altera-unroll-loops"                                           # 必须使用循环展开
+  - "-bugprone-easily-swappable-parameters"                          # 易出错的可交换的函数参数
+  - "-cppcoreguidelines-owning-memory"                               # 禁止直接使用 new 而是使用 gsl::owner (方便静态分析)
+  - "-cppcoreguidelines-pro-type-const-cast"                         # 禁止 const_cast
+  - "-modernize-use-nodiscard"                                       # 必须使用 [[nodiscard]]
+  - "-cppcoreguidelines-avoid-capturing-lambda-coroutines"           # 禁止 lambda 捕获协程
+  - "-altera-id-dependent-backward-branch"                           # 禁止循环中使用依赖循环次数的变量
+  - "-readability-function-cognitive-complexity"                     # 函数复杂度限制, 计算嵌套层数等
+  - "-cppcoreguidelines-macro-usage"                                 # 禁止宏定义
+  - "-cppcoreguidelines-avoid-reference-coroutine-parameters"        # 禁止协程参数使用引用
+  - "-hicpp-no-malloc"                                               # 禁止 malloc
+  - "-cppcoreguidelines-no-malloc"                                   # 禁止 malloc
+  - "-clang-diagnostic-unused-command-line-argument"                 # 使用 msvc 时 /Zc:preprocessor 参数报错
+  - "-clang-diagnostic-pragma-once-outside-header"                   # 使用 msvc 时 报错 #pragma once 位于 main 文件
+  # - "-bugprone-exception-escape"                                   # 禁止可能抛出异常的函数使用 noexcept (在 win32 上此检查可能存在 bug)
+  - "-cppcoreguidelines-avoid-do-while"                              # 禁止 do while
+  - "-hicpp-exception-baseclass"                                     # 异常必须继承于 std::exception
+  - "-fuchsia-overloaded-operator"                                   # 禁止运算符重载（除了赋值和移动）
+  - "-cppcoreguidelines-pro-type-union-access"                       # 禁止使用 union
+  - "-cppcoreguidelines-avoid-const-or-ref-data-members"             # 禁止成员变量使用引用
+  - "-misc-no-recursion"                                             # 禁止递归
+  - "-hicpp-avoid-goto"                                              # 禁止 goto
+  - "-cppcoreguidelines-avoid-goto"                                  # 禁止 goto
+  - "-google-build-using-namespace" 								                 # 禁止 global using namespace
+  - "-cppcoreguidelines-pro-type-vararg"                             # 禁止 C 函数泛型
+  - "-hicpp-vararg"                                                  # 禁止 C 函数泛型
+  - "-hicpp-signed-bitwise"                                          # 禁止与或非操作符
+  - "-android-cloexec-open"                                          # android-cloexec-open
+  - "-android-cloexec-epoll-create"                                  # android-cloexec-epoll-create
+  - "-android-cloexec-accept"                                        # android-cloexec-accept
+  - "-android-cloexec-socket"                                        # android-cloexec-socket
+  - "-modernize-macro-to-enum"										                   # 禁止宏定义数字
+  - "-cppcoreguidelines-missing-std-forward"                         # clangd 错误的报告
+  - "-bugprone-empty-catch"                                          # 空的 catch
+  - "-bugprone-not-null-terminated-result"				           	       # 禁止返回未以 null 结尾的字符串
+  - "-readability-implicit-bool-conversion"				           	       # 禁止隐式 bool 转换
+  - "-cppcoreguidelines-pro-bounds-array-to-pointer-decay"		    	 # 禁止数组转指针
+  - "-hicpp-no-array-decay"			                                     # 禁止数组转指针
+  - "-cppcoreguidelines-pro-bounds-constant-array-index" 			       # 当索引不是整数常量表达式时不要使用数组下标
+  - "-abseil-string-find-str-contains"							                 # 使用 find() 替代 find() != npos
+  - "-performance-no-int-to-ptr"							  	                	 # 禁止整数转指针
+  - "-cert-err33-c"							  					                      	 # 重复的警告
+  - "-bugprone-unused-return-value"                                  # 不检查未使用的返回值
+  - "-fuchsia-multiple-inheritance"                                  # 禁用多继承
+  - "-readability-redundant-member-init"                             # 禁用多余的初始化
+WarningsAsErrors: "*"
 CheckOptions:
-  - key:             readability-redundant-member-init.IgnoreBaseInCopyConstructors
-    value:           1
-  - key:             modernize-use-default-member-init.UseAssignment
-    value:           1
+  - key: readability-identifier-length.MinimumVariableNameLength
+    value: 0
+  - key: readability-identifier-length.MinimumParameterNameLength
+    value: 0
+  - key: readability-identifier-length.MinimumLoopCounterNameLength
+    value: 0
+  - key: readability-identifier-length.MinimumExceptionNameLength
+    value: 0
+  - key: readability-qualified-auto.AddConstToQualified
+    value: false

@@ -9,9 +9,15 @@
 	mkdir bin
 	mkdir thirdParty
 	# download thirdParty
-	code .
-	# init file .vscode/settings.json .vscode/tasks.json .vscode/launch.json
-	# F5 to start
+
+	# 1. build and run
+	xmake config -m debug
+	xmake
+	xmake run
+
+	# 2. debug with vscode
+	# init file: .vscode/settings.json .vscode/tasks.json .vscode/launch.json
+	# F5 to debug
 	```
 
 - download thirdParty

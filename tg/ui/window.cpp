@@ -20,7 +20,7 @@ auto init_imgui() {
         std::abort();
     }
 
-    // GL 3.0 + GLSL 130
+    // GL 3.2 + GLSL 130
     const char* glsl_version = "#version 130";
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
@@ -46,14 +46,25 @@ auto init_imgui() {
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;     // Enable Multi-Viewport / Platform Windows
 
     // Setup Dear ImGui style
-    // ImGui::StyleColorsDark();
-    ImGui::StyleColorsLight();
+    ImGui::StyleColorsClassic();
 
     // When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
     ImGuiStyle& style = ImGui::GetStyle();
     if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
         style.WindowRounding              = 0;
         style.Colors[ImGuiCol_WindowBg].w = 1;
+    }
+
+    float xscale;
+    float yscale;
+    glfwGetWindowContentScale(window, &xscale, &yscale);
+    auto scale = std::max(xscale, yscale);
+    style.ScaleAllSizes(scale);
+
+    constexpr auto k_font_size = 20.F;
+    if (!io.Fonts->AddFontFromFileTTF(R"(c:\Windows\Fonts\msyh.ttc)", k_font_size * scale, nullptr, io.Fonts->GetGlyphRangesChineseFull())) {
+        spdlog::error("imgui AddFontFromFileTTF error");
+        std::abort();
     }
 
     // Setup Platform/Renderer backends
@@ -63,26 +74,6 @@ auto init_imgui() {
     }
     if (!ImGui_ImplOpenGL3_Init(glsl_version)) {
         spdlog::error("imgui ImGui_ImplOpenGL3_Init error");
-        std::abort();
-    }
-
-    // Load Fonts
-    // - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them.
-    // - AddFontFromFileTTF() will return the ImFont* so you can store it if you need to select the font among multiple.
-    // - If the file cannot be loaded, the function will return a nullptr. Please handle those errors in your application (e.g. use an assertion, or display an error and quit).
-    // - The fonts will be rasterized at a given size (w/ oversampling) and stored into a texture when calling ImFontAtlas::Build()/GetTexDataAsXXXX(), which ImGui_ImplXXXX_NewFrame below will call.
-    // - Use '#define IMGUI_ENABLE_FREETYPE' in your imconfig file to use Freetype for higher quality font rendering.
-    // - Read 'docs/FONTS.md' for more instructions and details.
-    // - Remember that in C/C++ if you want to include a backslash \ in a string literal you need to write a double backslash \\ !
-    // - Our Emscripten build process allows embedding fonts to be accessible at runtime from the "fonts/" folder. See Makefile.emscripten for details.
-    // io.Fonts->AddFontDefault();
-    // io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\segoeui.ttf", 18.0f);
-    // io.Fonts->AddFontFromFileTTF("../../misc/fonts/DroidSans.ttf", 16.0f);
-    // io.Fonts->AddFontFromFileTTF("../../misc/fonts/Roboto-Medium.ttf", 16.0f);
-    // io.Fonts->AddFontFromFileTTF("../../misc/fonts/Cousine-Regular.ttf", 15.0f);
-    constexpr auto k_font_size = 18.F;
-    if (!io.Fonts->AddFontFromFileTTF(R"(c:\Windows\Fonts\msyh.ttc)", k_font_size, nullptr, io.Fonts->GetGlyphRangesChineseFull())) {
-        spdlog::error("imgui AddFontFromFileTTF error");
         std::abort();
     }
 }

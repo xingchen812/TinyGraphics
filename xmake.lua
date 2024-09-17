@@ -8,10 +8,8 @@ add_includedirs("$(scriptdir)/thirdParty")
 add_includedirs("$(scriptdir)/thirdParty/GLFW/include")
 add_includedirs("$(scriptdir)/thirdParty/imgui")
 
-if is_plat("windows") then
-    add_cxflags("/utf-8")
-    add_cxflags("/Zc:preprocessor")
-end
+add_cxflags("cl::/Zc:preprocessor")
+add_cxflags("cl::/utf-8")
 
 target("TinyGraphics")
     set_kind("binary")

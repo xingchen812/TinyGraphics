@@ -63,6 +63,7 @@ Checks:
   - "-bugprone-unused-return-value"                                  # 不检查未使用的返回值
   - "-fuchsia-multiple-inheritance"                                  # 禁用多继承
   - "-readability-redundant-member-init"                             # 禁用多余的初始化
+	- "-altera-struct-pack-align"
 WarningsAsErrors: "*"
 CheckOptions:
   - key: readability-identifier-length.MinimumVariableNameLength

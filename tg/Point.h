@@ -5,17 +5,39 @@
 
 namespace tg {
 namespace detail {
+template <size_t PointSize, typename ValueType>
+class PointValue;
+
+template <typename ValueType>
+class PointValue<2, ValueType> {
+public:
+    ValueType x = 0;
+    ValueType y = 0;
+};
+
+template <typename ValueType>
+class PointValue<3, ValueType> {
+public:
+    ValueType x = 0;
+    ValueType y = 0;
+    ValueType z = 0;
+};
+
+template <typename ValueType>
+class PointValue<4, ValueType> {
+public:
+    ValueType x = 0;
+    ValueType y = 0;
+    ValueType z = 0;
+    ValueType w = 0;
+};
+
 template <size_t PointSize = 3, typename ValueType = float>
-class Point {   // NOLINT
+class Point : public PointValue<PointSize, ValueType> {   // NOLINT
 public:
     static_assert(PointSize >= 2 && PointSize <= 4);
 
     using value_t     = ValueType;
-
-    value_t x         = 0;
-    value_t y         = 0;
-    value_t z         = 0;
-    value_t w         = 0;
 
     constexpr Point() = default;
 
@@ -43,64 +65,50 @@ public:
         this->w = w;
     }
 
-    constexpr auto operator=(const Point& p) -> Point& {
-        if (this != &p) {
-            x = p.x;
-            y = p.y;
-            if constexpr (PointSize > 2) {
-                z = p.z;
-            }
-            if constexpr (PointSize > 3) {
-                w = p.w;
-            }
-        }
-        return *this;
-    }
-
     constexpr auto operator+=(const Point& p) -> Point& {
-        x += p.x;
-        y += p.y;
+        this->x += p.x;
+        this->y += p.y;
         if constexpr (PointSize > 2) {
-            z += p.z;
+            this->z += p.z;
         }
         if constexpr (PointSize > 3) {
-            w += p.w;
+            this->w += p.w;
         }
         return *this;
     }
 
     constexpr auto operator-=(const Point& p) -> Point& {
-        x -= p.x;
-        y -= p.y;
+        this->x -= p.x;
+        this->y -= p.y;
         if constexpr (PointSize > 2) {
-            z -= p.z;
+            this->z -= p.z;
         }
         if constexpr (PointSize > 3) {
-            w -= p.w;
+            this->w -= p.w;
         }
         return *this;
     }
 
     constexpr auto operator*=(value_t c) -> Point& {
-        x *= c;
-        y *= c;
+        this->x *= c;
+        this->y *= c;
         if constexpr (PointSize > 2) {
-            z *= c;
+            this->z *= c;
         }
         if constexpr (PointSize > 3) {
-            w *= c;
+            this->w *= c;
         }
         return *this;
     }
 
     constexpr auto operator/=(value_t c) -> Point& {
-        x /= c;
-        y /= c;
+        this->x /= c;
+        this->y /= c;
         if constexpr (PointSize > 2) {
-            z /= c;
+            this->z /= c;
         }
         if constexpr (PointSize > 3) {
-            w /= c;
+            this->w /= c;
         }
         return *this;
     }
@@ -190,30 +198,30 @@ public:
 
     constexpr auto abs() const {
         if constexpr (PointSize == 2) {
-            return Point(std::abs(x), std::abs(y));
+            return Point(std::abs(this->x), std::abs(this->y));
         }
         else if constexpr (PointSize == 3) {
-            return Point(std::abs(x), std::abs(y), std::abs(z));
+            return Point(std::abs(this->x), std::abs(this->y), std::abs(this->z));
         }
         else if constexpr (PointSize == 4) {
-            return Point(std::abs(x), std::abs(y), std::abs(z), std::abs(w));
+            return Point(std::abs(this->x), std::abs(this->y), std::abs(this->z), std::abs(this->w));
         }
     }
 
     constexpr auto cross(const Point& vec) const
         requires(PointSize == 3)
     {
-        return Point(y * vec.z - z * vec.y, z * vec.x - x * vec.z, x * vec.y - y * vec.x);
+        return Point(this->y * vec.z - this->z * vec.y, this->z * vec.x - this->x * vec.z, this->x * vec.y - this->y * vec.x);
     }
 
     constexpr auto distance_to(const Point& vec) const -> value_t
         requires(PointSize == 2 || PointSize == 3)
     {
         if constexpr (PointSize == 2) {
-            return std::sqrt(std::pow(x - vec.x, 2) + std::pow(y - vec.y, 2));
+            return std::sqrt(std::pow(this->x - vec.x, 2) + std::pow(this->y - vec.y, 2));
         }
         else if constexpr (PointSize == 3) {
-            return std::sqrt(std::pow(x - vec.x, 2) + std::pow(y - vec.y, 2) + std::pow(z - vec.z, 2));
+            return std::sqrt(std::pow(this->x - vec.x, 2) + std::pow(this->y - vec.y, 2) + std::pow(this->z - vec.z, 2));
         }
     }
 
@@ -221,10 +229,10 @@ public:
         requires(PointSize == 2 || PointSize == 3)
     {
         if constexpr (PointSize == 2) {
-            return x * vec.x + y * vec.y;
+            return this->x * vec.x + this->y * vec.y;
         }
         else if constexpr (PointSize == 3) {
-            return x * vec.x + y * vec.y + z * vec.z;
+            return this->x * vec.x + this->y * vec.y + this->z * vec.z;
         }
     }
 
@@ -232,10 +240,10 @@ public:
         requires(PointSize == 2 || PointSize == 3)
     {
         if constexpr (PointSize == 2) {
-            return std::sqrt(x * x + y * y);
+            return std::sqrt(this->x * this->x + this->y * this->y);
         }
         else if constexpr (PointSize == 3) {
-            return std::sqrt(x * x + y * y + z * z);
+            return std::sqrt(this->x * this->x + this->y * this->y + this->z * this->z);
         }
     }
 
@@ -243,31 +251,56 @@ public:
         requires(PointSize == 2 || PointSize == 3)
     {
         if constexpr (PointSize == 2) {
-            return Point(x + t * (vec.x - x), y + t * (vec.y - y));
+            return Point(this->x + t * (vec.x - this->x), this->y + t * (vec.y - this->y));
         }
         else if constexpr (PointSize == 3) {
-            return Point(x + t * (vec.x - x), y + t * (vec.y - y), z + t * (vec.z - z));
+            return Point(this->x + t * (vec.x - this->x), this->y + t * (vec.y - this->y), this->z + t * (vec.z - this->z));
         }
     }
 
-    constexpr auto rotate(const Point& axis, value_t angle)
+    constexpr auto normalized() const
         requires(PointSize == 2 || PointSize == 3)
     {
-        value_t c = std::cos(angle);
-        value_t s = std::sin(angle);
-
-        Point rotated;
-        rotated.x = (c + (1 - c) * axis.x * axis.x) * x + ((1 - c) * axis.x * axis.y - axis.z * s) * y + ((1 - c) * axis.x * axis.z + axis.y * s) * z;
-        rotated.y = ((1 - c) * axis.x * axis.y + axis.z * s) * x + (c + (1 - c) * axis.y * axis.y) * y + ((1 - c) * axis.y * axis.z - axis.x * s) * z;
-        if constexpr (PointSize > 3) {
-            rotated.z = ((1 - c) * axis.x * axis.z - axis.y * s) * x + ((1 - c) * axis.y * axis.z + axis.x * s) * y + (c + (1 - c) * axis.z * axis.z) * z;
+        value_t len = length();
+        if (!equalF(len, 0)) {
+            if constexpr (PointSize == 2) {
+                return Point(this->x / len, this->y / len);
+            }
+            else {
+                return Point(this->x / len, this->y / len, this->z / len);
+            }
         }
-
-        x = rotated.x;
-        y = rotated.y;
-        if constexpr (PointSize > 3) {
-            z = rotated.z;
+        else {
+            return *this;
         }
+    }
+
+    constexpr auto normalize() {
+        *this = normalized();
+    }
+
+    constexpr auto rotated(const Point& axis, value_t radians) const
+        requires(PointSize == 2)
+    {
+        value_t cos_angle = std::cos(radians);
+        value_t sin_angle = std::sin(radians);
+        Point   relative  = *this - axis;
+        return Point(
+            relative.x * cos_angle - relative.y * sin_angle + axis.x,
+            relative.x * sin_angle + relative.y * cos_angle + axis.y
+        );
+    }
+
+    constexpr auto rotate(const Point& axis, value_t radians) {
+        *this = rotated(axis, radians);
+    }
+
+    constexpr auto angle_to(const Point& vec) const -> value_t {
+        return atan2(cross(vec), dot(vec));
+    }
+
+    constexpr auto direction_to(const Point& other) const {
+        return (other - *this).normalized();
     }
 };
 
@@ -292,12 +325,30 @@ inline constexpr auto Point2To3(const std::vector<Point2>& p) {
     return res;
 }
 
+inline constexpr auto Point2To3(const std::vector<std::vector<Point2>>& p) {
+    std::vector<std::vector<Point3>> res;
+    res.resize(p.size());
+    for (size_t i = 0; i < p.size(); i++) {
+        res[i] = Point2To3(p[i]);
+    }
+    return res;
+}
+
 inline constexpr auto Point3To2(const Point3& p) {
     return Point2(p.x, p.z);
 }
 
 inline constexpr auto Point3To2(const std::vector<Point3>& p) {
     std::vector<Point2> res;
+    res.resize(p.size());
+    for (size_t i = 0; i < p.size(); i++) {
+        res[i] = Point3To2(p[i]);
+    }
+    return res;
+}
+
+inline constexpr auto Point3To2(const std::vector<std::vector<Point3>>& p) {
+    std::vector<std::vector<Point2>> res;
     res.resize(p.size());
     for (size_t i = 0; i < p.size(); i++) {
         res[i] = Point3To2(p[i]);

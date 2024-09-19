@@ -6,16 +6,11 @@
 using namespace tg;
 
 namespace {
-class Impl : public ui::Window {
+class Impl : public ui::Window {   // NOLINT(cppcoreguidelines-special-member-functions,hicpp-special-member-functions)
 public:
-    Impl(const Impl&)           = delete;
-    Impl(Impl&&)                = delete;
-    auto operator=(const Impl&) = delete;
-    auto operator=(Impl&&)      = delete;
-
     Impl() {
-        textureWidth  = 1000;   // NOLINT
-        textureHeight = 1000;   // NOLINT
+        textureWidth  = 1000;      // NOLINT
+        textureHeight = 1000;      // NOLINT
         // RGBA
         data = std::vector<uint8_t>(4ULL * textureWidth * textureHeight, 0);
         // Set green color (R=0, G=255, B=0, A=255)
@@ -33,8 +28,6 @@ public:
         glBindTexture(GL_TEXTURE_2D, 0);
         glDeleteTextures(1, &textureID);
     }
-
-    auto init() -> void override {}
 
     auto impl_paint() -> void override {
         // Set texture parameters

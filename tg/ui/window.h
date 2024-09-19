@@ -3,10 +3,6 @@
 
 #include <fstream>
 #include <functional>
-#include <memory>
-#include <spdlog/sinks/stdout_color_sinks.h>
-#include <string>
-#include <unordered_map>
 
 namespace tg::ui {
 class Component;
@@ -38,11 +34,15 @@ public:
     virtual auto paint() -> void;
 
     auto callEvent(const Event& e) const {
-        auto it = m_event.find(e.m_event_name);
-        if (it == m_event.end() || it->second == nullptr) {
-            throw tg_exception();
+        try {
+            auto it = m_event.find(e.m_event_name);
+            if (it == m_event.end() || it->second == nullptr) {
+                throw std::runtime_error(std::format("event not found: {}, {}.", m_name, e.m_event_name));
+            }
+            it->second(e);
+        } catch (std::exception& e) {
+            spdlog::error("callEvent error: {}", e.what());
         }
-        it->second(e);
     }
 
     auto callEvent(const std::string& event_name) {
@@ -63,7 +63,7 @@ public:
     auto readConfig(const std::string& name, ValueType& v) {
         auto j = readConfig();
         if (!j.contains(name)) {
-            return;
+            throw std::runtime_error(std::format("config not found: {}, {}.", m_name, name));
         }
         from_json(j.at(name), v);
     }
@@ -173,8 +173,15 @@ public:
     }
 
     auto closeWindow(std::string_view window_name) {
-        m_windows.erase(window_name);
+        auto it = m_windows.erase(window_name);
         saveWindowsConfig();
+        return it;
+    }
+
+    auto closeWindow(unordered_map_string<std::unique_ptr<Window>>::iterator it) {
+        auto res = m_windows.erase(it);
+        saveWindowsConfig();
+        return res;
     }
 
     auto getWindow(std::string_view window_name) const -> const std::unique_ptr<Window>& {
@@ -258,6 +265,10 @@ inline auto registerComponent(std::string_view name, const std::function<std::un
 template <typename WindowType>
 inline auto registerComponent(std::string_view name) {
     MainWindow::getInstance().registerComponent(name, []() { return std::make_unique<WindowType>(); });
+}
+
+inline auto registerFunction(std::string_view name, std::function<std::any(const std::any&)> callback) {
+    MainWindow::getInstance().registerFunction(name, std::move(callback));
 }
 
 template <bool StatisticTime = true>

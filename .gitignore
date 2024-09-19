@@ -1,7 +1,5 @@
 build/
-CMakeLists.txt.user
 .vscode/
-config/
 thirdParty/
 .xmake/
 bin/

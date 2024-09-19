@@ -2,6 +2,7 @@
 #include <filesystem>
 #include <nlohmann/json.hpp>
 #include <numbers>
+#include <source_location>
 #include <spdlog/spdlog.h>
 
 #define TG_EXCEPTION(...) std::runtime_error(fmt::format("runtime_error: {}:{} {}", __FILE__, __LINE__, fmt::format(__VA_ARGS__ __VA_OPT__(, ) "")))
@@ -29,7 +30,7 @@
     TG_SINGLE_RUN() { TG_WINDOW_REGISTER(a_type, __VA_ARGS__); }
 
 #define TG_QUICK_WINDOW_REGISTER_2 \
-    TG_QUICK_WINDOW_REGISTER(Impl, ::tg::currentFilenameWithoutCpp(__FILE__))
+    TG_QUICK_WINDOW_REGISTER(Impl, ::tg::currentFilenameWithoutCpp())
 
 namespace tg {
 namespace detail {
@@ -99,23 +100,26 @@ inline constexpr auto formatReadableDuration(std::chrono::nanoseconds duration) 
     return std::format("{}.{:06} ms", ms.count(), us.count());
 }
 
-inline auto currentFilenameWithoutCpp(std::string_view file) {
-    return std::filesystem::path(file).stem().string();
+inline auto currentFilenameWithoutCpp(const std::source_location& source_location = std::source_location::current()) {
+    constexpr std::string_view k_suffix = ".cpp";
+    auto                       name     = std::string_view{source_location.file_name()};
+    auto                       pos      = name.find_last_of("/\\");
+    if (!name.ends_with(k_suffix)) {
+        spdlog::error("currentFilenameWithoutCpp error: {}", source_location.file_name());
+        std::abort();
+    }
+    if (pos == std::string_view::npos) {
+        pos = 0;
+    }
+    else {
+        pos++;
+    }
+    name = name.substr(pos, name.size() - k_suffix.size() - pos);
+    return std::string{name};
 }
 
-// inline const std::vector<QColor> k_colors = []() {
-// 	std::vector<QColor> colors;
-// 	colors.emplace_back(0.F, 0.F, 255.F);	// Red (BGR format)
-// 	colors.emplace_back(0.F, 255.F, 0.F);	// Green
-// 	colors.emplace_back(255.F, 0.F, 0.F);	// Blue
-// 	colors.emplace_back(255.F, 255.F, 0.F); // Cyan
-// 	colors.emplace_back(255.F, 0.F, 255.F); // Magenta
-// 	colors.emplace_back(0.F, 255.F, 255.F); // Yellow
-// 	// colors.emplace_back(255.F, 255.F, 255.F); // White
-// 	colors.emplace_back(0.F, 0.F, 0.F);		  // Black
-// 	colors.emplace_back(128.F, 128.F, 128.F); // Gray
-// 	colors.emplace_back(0.F, 165.F, 255.F);	  // Orange
-// 	colors.emplace_back(128.F, 0.F, 128.F);	  // Purple
-// 	return colors;
-// }();
+inline auto getNextID() {
+    static auto id = 1ULL;
+    return id++;
+}
 }   // namespace tg

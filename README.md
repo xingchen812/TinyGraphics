@@ -84,7 +84,7 @@
 				"type": "cppvsdbg",
 				"request": "launch",
 				"program": "${workspaceRoot}/build/windows/x64/debug/TinyGraphics.exe",
-				"cwd": "${workspaceRoot}",
+				"cwd": "${workspaceRoot}/bin",
 				"console": "internalConsole",
 				"preLaunchTask": "build debug",
 			}

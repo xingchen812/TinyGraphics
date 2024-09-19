@@ -1,11 +1,11 @@
 #include <tg/ui/window.h>
 
+#include <glfw/glfw3.h>
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
-
-#include <glfw/glfw3.h>
 
 namespace tg::ui {
 namespace {
@@ -46,7 +46,7 @@ auto init_imgui() {
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;     // Enable Multi-Viewport / Platform Windows
 
     // Setup Dear ImGui style
-    ImGui::StyleColorsClassic();
+    ImGui::StyleColorsLight();
 
     // When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
     ImGuiStyle& style = ImGui::GetStyle();
@@ -140,16 +140,16 @@ auto MainWindow::main(int /*argc*/, char** /*argv*/) -> int {
         ImGui::NewFrame();
 
         // show all windows
-        paint();
-        for (auto it = m_windows.begin(); it != m_windows.end(); it++) {
+        for (auto it = m_windows.begin(); it != m_windows.end();) {
             if (it->second->m_open) {
                 it->second->paint();
+                it++;
             }
             else {
-                it = m_windows.erase(it);
-                saveWindowsConfig();
+                it = closeWindow(it);
             }
         }
+        paint();
 
         // Rendering
         ImGui::Render();
@@ -183,8 +183,27 @@ auto MainWindow::paint() -> void {
         constexpr auto k_padding = 20.F;
         ImGui::Indent(k_padding);
         for (auto& [name, c] : m_components) {
-            if (ImGui::Selectable(name.c_str())) {
+            if (ImGui::Selectable(std::format("{}##{}{}", name, "Components", name).c_str())) {
                 createWindow(name);
+            }
+        }
+        ImGui::Unindent(k_padding);
+    }
+    if (ImGui::CollapsingHeader("Running", ImGuiTreeNodeFlags_DefaultOpen)) {
+        constexpr auto k_padding = 20.F;
+        ImGui::Indent(k_padding);
+        for (auto& [name, c] : m_windows) {
+            if (ImGui::CollapsingHeader(std::format("{}##{}{}", name, "Running", name).c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
+                ImGui::Indent(k_padding);
+                if (ImGui::Selectable(std::format("关闭##{}{}关闭", "Running", name).c_str())) {
+                    c->m_open = false;
+                }
+                for (auto& [event_name, cb] : c->m_event) {
+                    if (ImGui::Selectable(std::format("{}##{}{}{}", event_name, "Running", name, event_name).c_str())) {
+						c->callEvent(event_name);
+                    }
+                }
+                ImGui::Unindent(k_padding);
             }
         }
         ImGui::Unindent(k_padding);
@@ -193,7 +212,7 @@ auto MainWindow::paint() -> void {
 }
 
 auto Window::paint() -> void {
-    ImGui::Begin(m_name.c_str(), &m_open);
+    ImGui::Begin(m_name.c_str(), &m_open, ImGuiWindowFlags_HorizontalScrollbar);
     impl_paint();
     ImGui::End();
 }

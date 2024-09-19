@@ -85,7 +85,7 @@
 				"request": "launch",
 				"program": "${workspaceRoot}/build/windows/x64/debug/TinyGraphics.exe",
 				"cwd": "${workspaceRoot}/bin",
-				"console": "internalConsole",
+				"console": "integratedTerminal",
 				"preLaunchTask": "build debug",
 			}
 		]

@@ -1,4 +1,5 @@
 #pragma once
+#include <tg/Point.h>
 #include <tg/utils.h>
 
 #include <fstream>
@@ -100,6 +101,9 @@ public:
         json[name] = j;
         writeConfig(json);
     }
+
+    auto getClickedPoint() -> std::tuple<bool, Point2>;
+    auto getWindowPos() -> Point2;
 
 protected:
     virtual auto impl_paint() -> void {}

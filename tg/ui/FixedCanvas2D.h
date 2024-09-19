@@ -16,7 +16,9 @@ public:
         auto operator=(const Texture&) = delete;
         auto operator=(Texture&&)      = delete;
 
-        auto update(const std::vector<uint8_t>& data, int width, int height) const -> void;
+        auto update(const std::vector<uint8_t>& data, int width, int height) -> void;
+
+        Point2 m_texturePos;
 
     private:
         unsigned int m_textureID;
@@ -97,6 +99,21 @@ public:
         if (connect_first_last) {
             drawLine(pre, pivot, color);
         }
+    }
+
+    auto getTexturePos() const {
+        return m_texture.m_texturePos;
+    }
+
+    auto getClickedTexturePos() -> std::tuple<bool, Point2> {
+        if (auto [ok, p] = getClickedPoint(); ok) {
+            p -= getTexturePos();
+            if (p.x < 0 || p.y < 0 || p.x > static_cast<float>(m_width) || p.y > static_cast<float>(m_height)) {
+                return {false, {}};
+            }
+            return {true, p};
+        }
+        return {false, {}};
     }
 
 private:

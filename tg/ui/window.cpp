@@ -80,14 +80,15 @@ auto init_imgui() {
 }
 
 auto init_spdlog() {
+    system("chcp 65001");
+    system("cls");
+
     auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
     console_sink->set_level(spdlog::level::debug);
     auto logger = std::make_shared<spdlog::logger>("console", console_sink);
     spdlog::set_default_logger(logger);
     // [时间戳] [日志级别] [线程ID] 消息
     console_sink->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] [%t] %v");
-
-    system("chcp 65001");
 }
 }   // namespace
 
@@ -207,5 +208,20 @@ auto Window::paint() -> void {
     ImGui::Begin(m_name.c_str(), &m_open, ImGuiWindowFlags_HorizontalScrollbar);
     impl_paint();
     ImGui::End();
+}
+
+auto Window::getClickedPoint() -> std::tuple<bool, Point2> {
+    (void)this;
+    if (ImGui::IsWindowHovered(ImGuiHoveredFlags_None) && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+        auto globalMousePos = ImGui::GetMousePos();
+        return {true, {globalMousePos.x, globalMousePos.y}};
+    }
+    return {false, {}};
+}
+
+auto Window::getWindowPos() -> Point2 {
+    (void)this;
+    auto windowPos = ImGui::GetWindowPos();
+    return {windowPos.x, windowPos.y};
 }
 }   // namespace tg::ui

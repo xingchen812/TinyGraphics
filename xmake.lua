@@ -4,6 +4,7 @@ add_rules("plugin.compile_commands.autoupdate", {outputdir = ".vscode"})
 set_languages("clatest", "c++latest")
 add_cxflags("cl::/Zc:preprocessor")
 add_cxflags("cl::/utf-8")
+add_cxflags("cl::/wd4244") -- 隐式类型转换可能丢失数据的警告
 
 add_includedirs(".")
 add_includedirs("thirdParty")

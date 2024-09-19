@@ -88,6 +88,10 @@ inline constexpr auto degreesToRadians(double degrees) -> double {
     return std::numbers::pi * (degrees / k_degrees);
 }
 
+inline constexpr auto degreesToRadians(float degrees) -> float {
+    return static_cast<float>(degreesToRadians(static_cast<double>(degrees)));
+}
+
 inline constexpr auto formatReadableDuration(std::chrono::nanoseconds duration) {
     auto s = std::chrono::duration_cast<std::chrono::seconds>(duration);
     duration -= s;

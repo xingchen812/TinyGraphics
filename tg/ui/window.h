@@ -155,13 +155,6 @@ public:
 
 class MainWindow final : public Window {
 public:
-    ~MainWindow() override;
-
-    MainWindow(const MainWindow&)     = delete;
-    MainWindow(MainWindow&&)          = delete;
-    auto operator=(const MainWindow&) = delete;
-    auto operator=(MainWindow&&)      = delete;
-
     auto main(int argc, char** argv) -> int;
     auto paint() -> void override;
 
@@ -241,7 +234,7 @@ public:
     }
 
 private:
-    MainWindow();
+    MainWindow() = default;
 
     auto makeWindow(std::string_view component_name, std::string_view window_name) const -> std::unique_ptr<Window> {
         auto& c             = getComponent(component_name);
@@ -269,7 +262,10 @@ private:
             std::filesystem::create_directory(getConfigFilePath().parent_path());
         }
         std::vector<Json> ws;
-        readConfig("启动的窗口", ws);
+        try {
+            readConfig("启动的窗口", ws);
+        } catch (std::exception& e) {
+        }
         for (auto& i : ws) {
             auto& component_name = i["component name"].get_ref<const std::string&>();
             auto& window_name    = i["window name"].get_ref<const std::string&>();

@@ -11,6 +11,11 @@ public:
         Texture();
         ~Texture();
 
+        Texture(const Texture&)        = delete;
+        Texture(Texture&&)             = delete;
+        auto operator=(const Texture&) = delete;
+        auto operator=(Texture&&)      = delete;
+
         auto update(const std::vector<uint8_t>& data, int width, int height) const -> void;
 
     private:
@@ -26,7 +31,7 @@ public:
         m_texture.update(m_data, m_width, m_height);
     }
 
-    auto resize(int width, int height) -> void {
+    auto resize(int width, int height) {
         m_width  = width;
         m_height = height;
         m_data.resize(4ULL * m_width * m_height, 0);
@@ -60,10 +65,10 @@ public:
         auto x     = begin.x;
         auto y     = begin.y;
         drawPoint(PointInt2{static_cast<int>(std::round(x)), static_cast<int>(std::round(y))}, color);
-        for (int i = 0; i <= steps + 1; i++) {
+        for (int i = 0; static_cast<float>(i) <= steps + 1; i++) {
             x += x_inc;
             y += y_inc;
-            drawPoint({(int)std::round(x), (int)std::round(y)}, color);
+            drawPoint({static_cast<int>(std::round(x)), static_cast<int>(std::round(y))}, color);
         }
     }
 

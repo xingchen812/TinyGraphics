@@ -27,7 +27,8 @@ auto init_imgui() {
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
-    auto* window = glfwCreateWindow(1000, 1000, "TinyGraphics", nullptr, nullptr);   // NOLINT
+    auto* window = glfwCreateWindow(280, 600, "TinyGraphics", nullptr, nullptr);
+    glfwSetWindowPos(window, 45, 200);
     if (!window) {
         spdlog::error("glfwCreateWindow error");
         std::abort();
@@ -86,29 +87,11 @@ auto init_spdlog() {
     // [时间戳] [日志级别] [线程ID] 消息
     console_sink->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] [%t] %v");
 
-    system("chcp 65001");   // NOLINT
+    system("chcp 65001");
 }
 }   // namespace
 
-MainWindow::MainWindow() = default;
-
-MainWindow::~MainWindow() {
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImGui::DestroyContext();
-
-    glfwDestroyWindow(glfwGetCurrentContext());
-    glfwTerminate();
-
-    spdlog::shutdown();
-}
-
 auto MainWindow::main(int /*argc*/, char** /*argv*/) -> int {
-    // init
-    // reinterpret_cast<Window*>(m_main_window.get())->moveCurWindow(45, 200);
-    // m_main_window->setCentralWidget(m_treeWidget);
-    // m_main_window->setWindowIcon(QApplication::style()->standardIcon(QStyle::SP_DirHomeIcon));
-
     m_component_name = "TinyGraphics";
     m_name           = m_component_name;
     m_open           = true;
@@ -117,7 +100,7 @@ auto MainWindow::main(int /*argc*/, char** /*argv*/) -> int {
     init_imgui();
     loadWindowsConfig();
 
-    static ImVec4 clear_color = ImVec4(0.45F, 0.55F, 0.60F, 1.00F);   // NOLINT
+    static ImVec4 clear_color = ImVec4(0.45F, 0.55F, 0.60F, 1.00F);
     ImGuiIO&      io          = ImGui::GetIO();
     auto*         window      = glfwGetCurrentContext();
 
@@ -173,6 +156,15 @@ auto MainWindow::main(int /*argc*/, char** /*argv*/) -> int {
 
         glfwSwapBuffers(window);
     }
+
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+
+    glfwDestroyWindow(glfwGetCurrentContext());
+    glfwTerminate();
+
+    spdlog::shutdown();
 
     return 0;
 }

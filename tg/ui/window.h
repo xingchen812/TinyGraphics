@@ -19,6 +19,51 @@ public:
 };
 
 class Window {
+private:
+    class Events {
+    public:
+        class EventItem {
+        public:
+            std::string                       m_event_name;
+            std::function<void(const Event&)> m_callback;
+        };
+
+        auto callEvent(const Event& e) const {
+            try {
+                const EventItem* item = nullptr;
+                for (auto& i : m_event) {
+                    if (i.m_event_name == e.m_event_name) {
+                        item = &i;
+                        break;
+                    }
+                }
+                if (item == nullptr) {
+                    throw std::runtime_error(std::format("event not found: {}, {}.", m_window->m_name, item->m_event_name));
+                }
+                item->m_callback(e);
+            } catch (std::exception& e) {
+                spdlog::error("callEvent error: {}", e.what());
+            }
+        }
+
+        auto callEvent(std::string_view event_name, std::any data = {}) const {
+            callEvent(Event(m_window, event_name, std::move(data)));
+        }
+
+        auto registerEvent(std::string_view event_name, std::function<void(const Event&)> callback) {
+            m_event.emplace_back(std::string{event_name}, std::move(callback));
+        }
+
+        auto registerEvent(std::string_view event_name, std::function<void()> callback) {
+            registerEvent(event_name, [callback = std::move(callback)](const Event&) {
+                callback();
+            });
+        }
+
+        Window*                m_window;
+        std::vector<EventItem> m_event;
+    };
+
 public:
     friend class MainWindow;
 
@@ -33,34 +78,16 @@ public:
     virtual auto init() -> void {}
     virtual auto paint() -> void;
 
-    auto callEvent(const Event& e) const {
-        try {
-            auto it = m_event.find(e.m_event_name);
-            if (it == m_event.end() || it->second == nullptr) {
-                throw std::runtime_error(std::format("event not found: {}, {}.", m_name, e.m_event_name));
-            }
-            it->second(e);
-        } catch (std::exception& e) {
-            spdlog::error("callEvent error: {}", e.what());
-        }
+    auto callEvent(std::string_view event_name, std::any data = {}) const {
+        m_events.callEvent(event_name, std::move(data));
     }
 
-    auto callEvent(const std::string& event_name) {
-        callEvent(Event(this, event_name));
-    }
-
-    auto registerEvent(const std::string& event_name, std::function<void(const Event&)> callback) {
-        m_event.try_emplace(event_name, nullptr).first->second = std::move(callback);
-    }
-
-    auto registerEvent(const std::string& event_name, std::function<void()> callback) {
-        m_event.try_emplace(event_name, nullptr).first->second = [callback = std::move(callback)](const Event&) {
-            callback();
-        };
+    auto registerEvent(std::string_view event_name, std::function<void()> callback) {
+        m_events.registerEvent(event_name, std::move(callback));
     }
 
     template <typename ValueType>
-    auto readConfig(const std::string& name, ValueType& v) {
+    auto readConfig(std::string_view name, ValueType& v) const {
         auto j = readConfig();
         if (!j.contains(name)) {
             throw std::runtime_error(std::format("config not found: {}, {}.", m_name, name));
@@ -68,7 +95,7 @@ public:
         from_json(j.at(name), v);
     }
 
-    auto writeConfig(std::string_view name, const Json& j) {
+    auto writeConfig(std::string_view name, const Json& j) const {
         auto json  = readConfig();
         json[name] = j;
         writeConfig(json);
@@ -77,11 +104,11 @@ public:
 protected:
     virtual auto impl_paint() -> void {}
 
-    auto getConfigFilePath() -> std::filesystem::path {
+    auto getConfigFilePath() const -> std::filesystem::path {
         return std::filesystem::current_path() / "config" / std::format("{}.json", m_component_name);
     }
 
-    auto readConfig() -> Json {
+    auto readConfig() const -> Json {
         if (!std::filesystem::exists(getConfigFilePath())) {
             return Json::object();
         }
@@ -94,7 +121,7 @@ protected:
         return j;
     }
 
-    auto writeConfig(const Json& j) -> void {
+    auto writeConfig(const Json& j) const -> void {
         std::ofstream file(getConfigFilePath());
         if (!file.is_open()) {
             throw tg_exception();
@@ -105,9 +132,9 @@ protected:
     std::string m_name;
 
 private:
-    std::string                                                        m_component_name;
-    bool                                                               m_open;
-    std::unordered_map<std::string, std::function<void(const Event&)>> m_event;
+    std::string m_component_name;
+    bool        m_open;
+    Events      m_events{.m_window = this};
 };
 
 class Component {
@@ -194,7 +221,7 @@ public:
 
     auto callEvent(std::string_view window_name, std::string_view event_name, std::any data = {}) {
         auto& w = const_cast<std::unique_ptr<Window>&>(getWindow(window_name));
-        w->callEvent(Event(w.get(), event_name, std::move(data)));
+        w->callEvent(event_name, std::move(data));
     }
 
     auto registerFunction(std::string_view name, std::function<std::any(const std::any&)> callback) {

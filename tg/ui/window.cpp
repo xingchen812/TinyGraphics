@@ -198,9 +198,9 @@ auto MainWindow::paint() -> void {
                 if (ImGui::Selectable(std::format("关闭##{}{}关闭", "Running", name).c_str())) {
                     c->m_open = false;
                 }
-                for (auto& [event_name, cb] : c->m_event) {
-                    if (ImGui::Selectable(std::format("{}##{}{}{}", event_name, "Running", name, event_name).c_str())) {
-						c->callEvent(event_name);
+                for (auto& item : c->m_events.m_event) {
+                    if (ImGui::Selectable(std::format("{}##{}{}{}", item.m_event_name, "Running", name, item.m_event_name).c_str())) {
+                        c->callEvent(item.m_event_name);
                     }
                 }
                 ImGui::Unindent(k_padding);

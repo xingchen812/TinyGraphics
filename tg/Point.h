@@ -114,14 +114,26 @@ public:
     }
 
     friend constexpr auto operator==(const Point& p1, const Point& p2) -> bool {
-        bool equal = equalF(p1.x, p2.x) && equalF(p1.y, p2.y);
-        if constexpr (PointSize > 2) {
-            equal = equal && equalF(p1.z, p2.z);
+        if constexpr (std::is_floating_point_v<value_t>) {
+            bool equal = equalF(p1.x, p2.x) && equalF(p1.y, p2.y);
+            if constexpr (PointSize > 2) {
+                equal = equal && equalF(p1.z, p2.z);
+            }
+            if constexpr (PointSize > 3) {
+                equal = equal && equalF(p1.w, p2.w);
+            }
+            return equal;
         }
-        if constexpr (PointSize > 3) {
-            equal = equal && equalF(p1.w, p2.w);
+        else {
+            bool equal = p1.x == p2.x && p1.y == p2.y;
+            if constexpr (PointSize > 2) {
+                equal = equal && p1.z == p2.z;
+            }
+            if constexpr (PointSize > 3) {
+                equal = equal && p1.w == p2.w;
+            }
+            return equal;
         }
-        return equal;
     }
 
     friend constexpr auto operator!=(const Point& p1, const Point& p2) -> bool {
@@ -306,6 +318,9 @@ public:
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Point<2>, x, y)
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Point<3>, x, y, z)
+
+using PointInt2 = Point<2, int>;
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(PointInt2, x, y)
 }   // namespace detail
 
 using Point2    = detail::Point<2>;
@@ -367,6 +382,13 @@ struct fmt::formatter<tg::Point3> : fmt::formatter<std::string> {               
 template <>
 struct fmt::formatter<tg::Point2> : fmt::formatter<std::string> {                          // NOLINT
     auto format(const tg::Point2& v, format_context& ctx) const -> decltype(ctx.out()) {   // NOLINT
+        return fmt::format_to(ctx.out(), "{{{}, {}}}", v.x, v.y);
+    }
+};
+
+template <>
+struct fmt::formatter<tg::PointInt2> : fmt::formatter<std::string> {                          // NOLINT
+    auto format(const tg::PointInt2& v, format_context& ctx) const -> decltype(ctx.out()) {   // NOLINT
         return fmt::format_to(ctx.out(), "{{{}, {}}}", v.x, v.y);
     }
 };

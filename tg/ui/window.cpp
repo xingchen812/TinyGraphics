@@ -9,7 +9,7 @@
 
 namespace tg::ui {
 namespace {
-auto init_imgui() {
+auto init_imgui(const PointInt2& mainWindowPos, const PointInt2& mainWindowSize) {
     glfwSetErrorCallback([](int error, const char* description) {
         spdlog::error("GLFW error {}: {}", error, description);
         std::abort();
@@ -27,8 +27,8 @@ auto init_imgui() {
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
-    auto* window = glfwCreateWindow(280, 600, "TinyGraphics", nullptr, nullptr);
-    glfwSetWindowPos(window, 45, 200);
+    auto* window = glfwCreateWindow(mainWindowSize.x, mainWindowSize.y, "TinyGraphics", nullptr, nullptr);
+    glfwSetWindowPos(window, mainWindowPos.x, mainWindowPos.y);
     if (!window) {
         spdlog::error("glfwCreateWindow error");
         std::abort();
@@ -93,12 +93,20 @@ auto init_spdlog() {
 }   // namespace
 
 auto MainWindow::main(int /*argc*/, char** /*argv*/) -> int {
-    m_component_name = "TinyGraphics";
-    m_name           = m_component_name;
-    m_open           = true;
+    m_component_name    = "TinyGraphics";
+    m_name              = m_component_name;
+    m_open              = true;
+
+    auto mainWindowPos  = PointInt2(45, 200);
+    auto mainWindowSize = PointInt2(280, 600);
+    try {
+        readConfig("主窗口位置", mainWindowPos);
+        readConfig("主窗口大小", mainWindowSize);
+    } catch (std::exception& e) {
+    }
 
     init_spdlog();
-    init_imgui();
+    init_imgui(mainWindowPos, mainWindowSize);
     loadWindowsConfig();
 
     static ImVec4 clear_color = ImVec4(0.45F, 0.55F, 0.60F, 1.00F);
@@ -157,6 +165,11 @@ auto MainWindow::main(int /*argc*/, char** /*argv*/) -> int {
 
         glfwSwapBuffers(window);
     }
+
+    glfwGetWindowPos(window, &mainWindowPos.x, &mainWindowPos.y);
+    glfwGetWindowSize(window, &mainWindowSize.x, &mainWindowSize.y);
+    writeConfig("主窗口位置", mainWindowPos);
+    writeConfig("主窗口大小", mainWindowSize);
 
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();

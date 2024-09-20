@@ -3,3 +3,4 @@ build/
 thirdParty/
 .xmake/
 bin/
+example/private/

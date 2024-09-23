@@ -1,6 +1,6 @@
 #include <tg/ui/window.h>
 
-#include <glfw/glfw3.h>
+#include <GLFW/glfw3.h>
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
@@ -154,6 +154,10 @@ auto MainWindow::main(int /*argc*/, char** /*argv*/) -> int {
             ImGui::UpdatePlatformWindows();
             ImGui::RenderPlatformWindowsDefault();
             glfwMakeContextCurrent(backup_current_context);
+        }
+
+        for (auto& [_, w] : m_windows) {
+            w->afterAllPaint();
         }
 
         glfwSwapBuffers(window);

@@ -78,6 +78,7 @@ public:
 
     virtual auto init() -> void {}
     virtual auto paint() -> void;
+    virtual auto afterAllPaint() -> void {}
 
     auto callEvent(std::string_view event_name, std::any data = {}) const {
         m_events.callEvent(event_name, std::move(data));

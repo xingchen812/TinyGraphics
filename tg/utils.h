@@ -126,4 +126,6 @@ inline auto getNextID() {
     static auto id = 1ULL;
     return id++;
 }
+
+auto getSystemLastErrorAsString() -> std::string;
 }   // namespace tg

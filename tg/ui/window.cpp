@@ -9,7 +9,7 @@
 
 namespace tg::ui {
 namespace {
-auto init_imgui(const PointInt2& mainWindowPos, const PointInt2& mainWindowSize) {
+auto init_imgui() {
     glfwSetErrorCallback([](int error, const char* description) {
         spdlog::error("GLFW error {}: {}", error, description);
         std::abort();
@@ -26,9 +26,9 @@ auto init_imgui(const PointInt2& mainWindowPos, const PointInt2& mainWindowSize)
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);   // 隐藏窗口
 
-    auto* window = glfwCreateWindow(mainWindowSize.x, mainWindowSize.y, "TinyGraphics", nullptr, nullptr);
-    glfwSetWindowPos(window, mainWindowPos.x, mainWindowPos.y);
+    auto* window = glfwCreateWindow(100, 100, "TinyGraphics", nullptr, nullptr);
     if (!window) {
         spdlog::error("glfwCreateWindow error");
         std::abort();
@@ -45,6 +45,7 @@ auto init_imgui(const PointInt2& mainWindowPos, const PointInt2& mainWindowSize)
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;   // Enable Keyboard Controls
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;       // Enable Docking
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;     // Enable Multi-Viewport / Platform Windows
+    io.ConfigViewportsNoAutoMerge = true;                   // 禁止合并到 window
 
     // Setup Dear ImGui style
     ImGui::StyleColorsLight();
@@ -93,20 +94,12 @@ auto init_spdlog() {
 }   // namespace
 
 auto MainWindow::main(int /*argc*/, char** /*argv*/) -> int {
-    m_component_name    = "TinyGraphics";
-    m_name              = m_component_name;
-    m_open              = true;
-
-    auto mainWindowPos  = PointInt2(45, 200);
-    auto mainWindowSize = PointInt2(280, 600);
-    try {
-        readConfig("主窗口位置", mainWindowPos);
-        readConfig("主窗口大小", mainWindowSize);
-    } catch (std::exception& e) {
-    }
+    m_component_name = "TinyGraphics";
+    m_name           = m_component_name;
+    m_open           = true;
 
     init_spdlog();
-    init_imgui(mainWindowPos, mainWindowSize);
+    init_imgui();
     loadWindowsConfig();
 
     static ImVec4 clear_color = ImVec4(0.45F, 0.55F, 0.60F, 1.00F);
@@ -165,11 +158,6 @@ auto MainWindow::main(int /*argc*/, char** /*argv*/) -> int {
 
         glfwSwapBuffers(window);
     }
-
-    glfwGetWindowPos(window, &mainWindowPos.x, &mainWindowPos.y);
-    glfwGetWindowSize(window, &mainWindowSize.x, &mainWindowSize.y);
-    writeConfig("主窗口位置", mainWindowPos);
-    writeConfig("主窗口大小", mainWindowSize);
 
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();

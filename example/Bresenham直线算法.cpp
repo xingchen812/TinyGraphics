@@ -4,14 +4,20 @@
 
 using namespace tg;
 
+/*
+Bresenham直线算法
+
+https://www.bilibili.com/video/BV1JZ4y1w7KZ?p=4&vd_source=b7194de18b0ccb5bbf18fe8fc10f0760
+*/
+
 namespace {
 class Impl : public ui::FixedCanvas2D {
 public:
-    static auto LinearInterp(int t, int tStart, int tEnd, Color cStart, Color cEnd) {
-        return cStart * (static_cast<float>(t - tEnd) / static_cast<float>(tStart - tEnd)) + cEnd * (static_cast<float>(t - tStart) / static_cast<float>(tEnd - tStart));
-    }
-
     auto bresenhamLine(const PointInt2& p1, const Color& c1, const PointInt2& p2, const Color& c2) {
+        auto LinearInterp = [](int t, int tStart, int tEnd, Color cStart, Color cEnd) {
+            return cStart * (static_cast<float>(t - tEnd) / static_cast<float>(tStart - tEnd)) + cEnd * (static_cast<float>(t - tStart) / static_cast<float>(tEnd - tStart));
+        };
+
         auto dx           = abs(p2.x - p1.x);
         auto dy           = abs(p2.y - p1.y);
         auto bInterChange = false;

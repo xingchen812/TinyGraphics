@@ -10,6 +10,7 @@ add_includedirs(".")
 add_includedirs("thirdParty")
 add_includedirs("thirdParty/GLFW/include")
 add_includedirs("thirdParty/imgui")
+add_includedirs("thirdParty/opencv/include")
 
 target("TinyGraphics")
     set_kind("binary")
@@ -22,3 +23,6 @@ target("TinyGraphics")
     add_files("thirdParty/glfw/src/*.c")
 
     add_files("thirdParty/imgui/*.cpp")
+
+	add_linkdirs("thirdParty/opencv/x64/vc16/lib")
+	add_links("opencv_world4100")

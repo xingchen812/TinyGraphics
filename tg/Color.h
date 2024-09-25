@@ -1,7 +1,6 @@
 #pragma once
 #include <tg/utils.h>
 
-#include <algorithm>
 #include <format>
 
 namespace tg {
@@ -12,57 +11,55 @@ public:
     value_t r         = 0;
     value_t g         = 0;
     value_t b         = 0;
-    value_t a         = 0;
 
     constexpr Color() = default;
 
-    constexpr Color(value_t r, value_t g, value_t b, value_t a)
-        : r(r), g(g), b(b), a(a) {}
+    constexpr Color(value_t r, value_t g, value_t b)
+        : r(r), g(g), b(b) {}
+
+    constexpr Color(uint8_t r, uint8_t g, uint8_t b)
+        : r(static_cast<value_t>(r) / static_cast<value_t>(std::numeric_limits<uint8_t>::max())),
+          g(static_cast<value_t>(g) / static_cast<value_t>(std::numeric_limits<uint8_t>::max())),
+          b(static_cast<value_t>(b) / static_cast<value_t>(std::numeric_limits<uint8_t>::max())) {}
 
     constexpr auto operator+=(const Color& right) {
         r += right.r;
         g += right.g;
         b += right.b;
-        a += right.a;
     }
 
     constexpr auto operator-=(const Color& right) {
         r -= right.r;
         g -= right.g;
         b -= right.b;
-        a -= right.a;
     }
 
     constexpr auto operator*=(const Color& right) {
         r *= right.r;
         g *= right.g;
         b *= right.b;
-        a *= right.a;
     }
 
     constexpr auto operator*=(const value_t& right) {
         r *= right;
         g *= right;
         b *= right;
-        a *= right;
     }
 
     constexpr auto operator/=(const Color& right) {
         r /= right.r;
         g /= right.g;
         b /= right.b;
-        a /= right.a;
     }
 
     constexpr auto operator/=(const value_t& right) {
         r /= right;
         g /= right;
         b /= right;
-        a /= right;
     }
 
     friend constexpr auto operator==(const Color& left, const Color& right) {
-        return equalF(left.r, right.r) && equalF(left.g, right.g) && equalF(left.b, right.b) && equalF(left.a, right.a);
+        return equalF(left.r, right.r) && equalF(left.g, right.g) && equalF(left.b, right.b);
     }
 
     friend constexpr auto operator!=(const Color& left, const Color& right) {
@@ -70,27 +67,27 @@ public:
     }
 
     friend constexpr auto operator+(const Color& left, const Color& right) {
-        return Color(left.r + right.r, left.g + right.g, left.b + right.b, left.a + right.a);
+        return Color(left.r + right.r, left.g + right.g, left.b + right.b);
     }
 
     friend constexpr auto operator-(const Color& left, const Color& right) {
-        return Color(left.r - right.r, left.g - right.g, left.b - right.b, left.a - right.a);
+        return Color(left.r - right.r, left.g - right.g, left.b - right.b);
     }
 
     friend constexpr auto operator*(const Color& left, const Color& right) {
-        return Color(left.r * right.r, left.g * right.g, left.b * right.b, left.a * right.a);
+        return Color(left.r * right.r, left.g * right.g, left.b * right.b);
     }
 
     friend constexpr auto operator*(const Color& left, const value_t& right) {
-        return Color(left.r * right, left.g * right, left.b * right, left.a * right);
+        return Color(left.r * right, left.g * right, left.b * right);
     }
 
     friend constexpr auto operator/(const Color& left, const Color& right) {
-        return Color(left.r / right.r, left.g / right.g, left.b / right.b, left.a / right.a);
+        return Color(left.r / right.r, left.g / right.g, left.b / right.b);
     }
 
     friend constexpr auto operator/(const Color& left, const value_t& right) {
-        return Color(left.r / right, left.g / right, left.b / right, left.a / right);
+        return Color(left.r / right, left.g / right, left.b / right);
     }
 
     // 提取8位颜色分量
@@ -106,85 +103,41 @@ public:
         return static_cast<uint8_t>(b * std::numeric_limits<uint8_t>::max());
     }
 
-    constexpr auto get_a8() const {
-        return static_cast<uint8_t>(a * std::numeric_limits<uint8_t>::max());
+    constexpr auto set_r8(uint8_t r) {
+        this->r = static_cast<value_t>(r) / static_cast<value_t>(std::numeric_limits<uint8_t>::max());
     }
 
-    constexpr auto to_ARGB32() const -> uint32_t {
-        return ((uint8_t(a * 255) << 24) | (uint8_t(r * 255) << 16) | (uint8_t(g * 255) << 8) | uint8_t(b * 255));   // NOLINT
+    constexpr auto set_g8(uint8_t g) {
+        this->g = static_cast<value_t>(g) / static_cast<value_t>(std::numeric_limits<uint8_t>::max());
     }
 
-    constexpr auto to_ARGB64() const -> uint64_t {
-        return (uint64_t(a * 65535) << 48) | (uint64_t(r * 65535) << 32) | (uint64_t(g * 65535) << 16) | uint64_t(b * 65535);   // NOLINT
-    }
-
-    constexpr auto to_RGBA32() const -> uint32_t {
-        return ((uint8_t(r * 255) << 24) | (uint8_t(g * 255) << 16) | (uint8_t(b * 255) << 8) | uint8_t(a * 255));   // NOLINT
-    }
-
-    constexpr auto to_RGBA64() const -> uint64_t {
-        return (uint64_t(r * 65535) << 48) | (uint64_t(g * 65535) << 32) | (uint64_t(b * 65535) << 16) | uint64_t(a * 65535);   // NOLINT
-    }
-
-                                                                                                                                // 灰度值（亮度）
-    constexpr auto gray() const -> value_t {
-        return (r + g + b) / 3.F;   // NOLINT
-    }
-
-                                    // 颜色加深和变浅
-    constexpr auto darkened(value_t amount) const {
-        return Color(std::max(0.F, r - amount), std::max(0.F, g - amount), std::max(0.F, b - amount), a);
-    }
-
-    constexpr auto lightened(value_t amount) const {
-        return Color(std::min(1.F, r + amount), std::min(1.F, g + amount), std::min(1.F, b + amount), a);
-    }
-
-    // 颜色反转
-    constexpr auto invert() {
-        r = 1.F - r;
-        g = 1.F - g;
-        b = 1.F - b;
-    }
-
-    constexpr auto inverted() const {
-        return Color(1.F - r, 1.F - g, 1.F - b, a);
-    }
-
-    // 对比度调整
-    constexpr auto contrast() {
-        constexpr value_t k_value    = 0.5F;
-        value_t           gray_value = gray();
-        if (gray_value < k_value) {
-            r *= k_value;
-            g *= k_value;
-            b *= k_value;
-        }
-        else {
-            r = (1.F - r) * k_value + r;
-            g = (1.F - g) * k_value + g;
-            b = (1.F - b) * k_value + b;
-        }
+    constexpr auto set_b8(uint8_t b) {
+        this->b = static_cast<value_t>(b) / static_cast<value_t>(std::numeric_limits<uint8_t>::max());
     }
 
     auto to_string() const {
-        return std::format("Color(r={}, g={}, b={}, a={})", r, g, b, a);
+        return std::format("Color(r={}, g={}, b={})", r, g, b);
+    }
+
+    static constexpr auto from_uint8(uint8_t r, uint8_t g, uint8_t b) {
+        return Color(r, g, b);
     }
 };
 
 namespace constants {
-constexpr Color black{0.F, 0.F, 0.F, 1.F};       // 黑色
-constexpr Color white{1.F, 1.F, 1.F, 1.F};       // 白色
-constexpr Color blue{0.F, 0.F, 1.F, 1.F};        // 蓝色
-constexpr Color green{0.F, 1.F, 0.F, 1.F};       // 绿色
-constexpr Color red{1.F, 0.F, 0.F, 1.F};         // 红色
-constexpr Color cyan{0.F, 1.F, 1.F, 1.F};        // 青色
-constexpr Color magenta{1.F, 0.F, 1.F, 1.F};     // 洋红色
-constexpr Color yellow{1.F, 1.F, 0.F, 1.F};      // 黄色
-constexpr Color gray{0.5F, 0.5F, 0.5F, 1.F};     // 灰色
-constexpr Color orange{1.F, 0.647F, 0.F, 1.F};   // 橙色
-constexpr Color purple{0.5F, 0.F, 0.5F, 1.F};    // 紫色
+constexpr auto black   = Color::from_uint8(0, 0, 0);         // 黑色
+constexpr auto white   = Color::from_uint8(255, 255, 255);   // 白色
+constexpr auto blue    = Color::from_uint8(0, 0, 255);       // 蓝色
+constexpr auto green   = Color::from_uint8(0, 255, 0);       // 绿色
+constexpr auto red     = Color::from_uint8(255, 0, 0);       // 红色
+constexpr auto cyan    = Color::from_uint8(0, 255, 255);     // 青色
+constexpr auto magenta = Color::from_uint8(255, 0, 255);     // 洋红色
+constexpr auto yellow  = Color::from_uint8(255, 255, 0);     // 黄色
+constexpr auto gray    = Color::from_uint8(128, 128, 128);   // 灰色
+constexpr auto orange  = Color::from_uint8(255, 162, 0);     // 橙色
+constexpr auto purple  = Color::from_uint8(128, 0, 128);     // 紫色
 
+// colors
 inline static const std::vector<Color> k_colors = []() {
     return std::vector<Color>{blue, green, red, cyan, magenta, yellow, black, gray, orange, purple};
 }();

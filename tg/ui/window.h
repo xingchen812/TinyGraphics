@@ -77,6 +77,8 @@ public:
     auto operator=(Window&&)      = delete;
 
     virtual auto init() -> void {}
+
+protected:
     virtual auto paint() -> void;
     virtual auto afterAllPaint() -> void {}
 
@@ -106,7 +108,6 @@ public:
     auto getClickedPoint() -> std::tuple<bool, Point2>;
     auto getWindowPos() -> Point2;
 
-protected:
     virtual auto impl_paint() -> void {}
 
     auto getConfigFilePath() const -> std::filesystem::path {
@@ -134,12 +135,19 @@ protected:
         file << j.dump(4);
     }
 
+    auto setWindowTop(bool topmost) {
+        m_set_window_top     = topmost;
+        m_set_not_window_top = !topmost;
+    }
+
     std::string m_name;
 
 private:
     std::string m_component_name;
     bool        m_open;
     Events      m_events{.m_window = this};
+    bool        m_set_window_top     = false;
+    bool        m_set_not_window_top = false;
 };
 
 class Component {

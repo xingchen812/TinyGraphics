@@ -7,6 +7,9 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <GLFW/glfw3native.h>
+
 namespace tg::ui {
 namespace {
 auto init_imgui() {
@@ -211,7 +214,23 @@ auto MainWindow::paint() -> void {
 
 auto Window::paint() -> void {
     ImGui::Begin(m_name.c_str(), &m_open, ImGuiWindowFlags_HorizontalScrollbar);
+
+    if (m_set_window_top || m_set_not_window_top) {
+        auto* viewport = ImGui::GetWindowViewport();
+        auto* w        = static_cast<GLFWwindow*>(viewport->PlatformHandle);
+        if (!w) {
+            return;
+        }
+        auto* hwnd = glfwGetWin32Window(w);
+        if (!SetWindowPos(hwnd, m_set_window_top ? HWND_TOPMOST : HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE)) {
+            spdlog::error("SetWindowPos error: {}", getSystemLastErrorAsString());
+        }
+        m_set_window_top     = false;
+        m_set_not_window_top = false;
+    }
+
     impl_paint();
+
     ImGui::End();
 }
 
